@@ -6,7 +6,7 @@ import PersonaDisplay from "@/components/onboarding/PersonaDisplay";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [userId] = useState(() => \`user_\${Date.now()}_\${Math.random().toString(36).substr(2, 9)}\`);
+  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   
   const { mutate: createProfile, isLoading } = useMutation(
     "/api/user/profile",
