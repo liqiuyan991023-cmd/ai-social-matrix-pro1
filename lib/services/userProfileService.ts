@@ -129,7 +129,7 @@ export class UserProfileService {
   async getAllUsers(limit: number = 100): Promise<string[]> {
     try {
       const keys = await redis.keys("user:*:profile");
-      return keys.map(key => key.split(":")[1]).slice(0, limit);
+      return keys.map((key: string) => key.split(":")[1]).slice(0, limit);
     } catch (error) {
       console.error("Failed to get all users:", error);
       return [];
