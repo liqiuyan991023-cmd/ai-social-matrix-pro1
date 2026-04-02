@@ -12,7 +12,12 @@ export class UserProfileService {
       updatedAt: Date.now(),
     };
     
-    await redis.set(this.PROFILE_KEY(data.userId), JSON.stringify(profile));
+    try {
+      await redis.set(this.PROFILE_KEY(data.userId), JSON.stringify(profile));
+    } catch (error) {
+      console.error("Failed to store profile in Redis:", error);
+      // Redis 不可用时，继续执行，不影响用户注册流程
+    }
     
     // 异步生成创作人格
     this.generateCreativePersona(data.userId).catch(console.error);
@@ -21,8 +26,14 @@ export class UserProfileService {
   }
 
   async getProfile(userId: string): Promise<UserProfile | null> {
-    const data = await redis.get(this.PROFILE_KEY(userId));
-    return typeof data === 'string' ? JSON.parse(data) : null;
+    try {
+      const data = await redis.get(this.PROFILE_KEY(userId));
+      return typeof data === 'string' ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error("Failed to get profile from Redis:", error);
+      // Redis 不可用时，返回 null
+      return null;
+    }
   }
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
@@ -35,7 +46,12 @@ export class UserProfileService {
       updatedAt: Date.now(),
     };
 
-    await redis.set(this.PROFILE_KEY(userId), JSON.stringify(updatedProfile));
+    try {
+      await redis.set(this.PROFILE_KEY(userId), JSON.stringify(updatedProfile));
+    } catch (error) {
+      console.error("Failed to update profile in Redis:", error);
+      // Redis 不可用时，继续执行，返回更新后的 profile
+    }
     return updatedProfile;
   }
 

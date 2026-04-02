@@ -23,6 +23,8 @@ export default function OnboardingPage() {
       }
       
       const result = await response.json();
+      // 存储 userId 到 localStorage
+      localStorage.setItem('userId', userId);
       router.push("/dashboard");
       return result;
     } catch (error) {
