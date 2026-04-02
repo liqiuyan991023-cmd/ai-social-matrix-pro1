@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { PenSquare, Copy, Check, Sparkles, MessageSquarePlus, ArrowLeft } from 'lucide-react';
+import { PenSquare, Copy, Check, Sparkles, MessageSquarePlus, ArrowLeft, Loader2, User } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
+import { ContentGenerationService } from "../lib/services/contentGenerationService";
+import { TopicRecommendationService } from "../lib/services/topicRecommendationService";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -15,6 +17,11 @@ export default function CreatePage() {
   const [copied, setCopied] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
+  
+  // 创建服务实例
+  const contentService = new ContentGenerationService();
+  const topicService = new TopicRecommendationService();
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -46,45 +53,40 @@ export default function CreatePage() {
     setIsGenerating(true);
     
     try {
-      // 构建包含人设信息的 prompt
-      let prompt = `基于以下创作者人设，为小红书平台生成一篇关于"${idea}"的笔记：\n`;
-      
-      if (userProfile) {
-        prompt += `\n创作者人设：\n`;
-        prompt += `年龄范围：${userProfile.ageRange}\n`;
-        prompt += `职业：${userProfile.profession}\n`;
-        prompt += `兴趣：${userProfile.interests.join('、')}\n`;
-        prompt += `创作风格：${userProfile.contentStyle}\n`;
-        prompt += `内容长度偏好：${userProfile.preferredLength === 'short' ? '短篇（300-500字）' : userProfile.preferredLength === 'medium' ? '中篇（500-800字）' : '长篇（800-1200字）'}\n`;
+      // 生成或获取主题
+      if (!selectedTopic && userProfile) {
+        // 基于用户输入的想法生成主题
+        const topics = await topicService.generateRecommendations(userProfile);
+        if (topics && topics.length > 0) {
+          setSelectedTopic(topics[0]);
+        } else {
+          // 如果没有生成主题，使用默认主题
+          setSelectedTopic({
+            id: 'default_topic',
+            title: idea,
+            contentAngle: `关于${idea}的分享`,
+            category: '生活方式'
+          });
+        }
       }
       
-      prompt += `\n要求：\n`;
-      prompt += `1. 符合小红书平台的内容风格和格式\n`;
-      prompt += `2. 语言生动有趣，有个人特色\n`;
-      prompt += `3. 包含相关的话题标签\n`;
-      prompt += `4. 内容结构清晰，有吸引力\n`;
+      if (!userProfile || !selectedTopic) {
+        throw new Error('缺少必要的用户信息或主题');
+      }
       
-      console.log('生成内容的 prompt:', prompt);
+      // 生成标题
+      const titles = await contentService.generateTitle(userProfile, selectedTopic);
+      const selectedTitle = titles[0];
       
-      // 模拟 API 调用
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 生成内容
+      const content = await contentService.generateContent(userProfile, selectedTopic, selectedTitle);
       
-      // 模拟生成的内容
-      const mockContent = `这绝对是打工人必备的桌面好物！😭
-
-平时天天对着电脑，颈椎真的受不了！最近入手了这几个小物件，幸福感直接拉满⬆️
-1️⃣ 屏幕增高架：不仅拯救了我的脖子，底下还能收纳键盘，桌面瞬间清爽！
-2️⃣ 无线磁吸充电座：告别一团乱麻的线，放上去就充电，超省心～
-3️⃣ 护眼挂灯：晚上加班（虽然不想）光线超舒服，不反光！
-
-你们桌面上有什么离不开的宝藏好物吗？评论区抄作业啦！👇
-
-#打工人日常 #桌面改造 #好物分享 #提升幸福感`;
+      // 生成关键词
+      const keywordsData = await contentService.generateKeywords(userProfile, selectedTopic, selectedTitle, content);
+      const tags = keywordsData.tags || [];
       
-      const mockKeywords = ['打工人日常', '桌面改造', '好物分享', '提升幸福感'];
-      
-      setGeneratedContent(mockContent);
-      setKeywords(mockKeywords);
+      setGeneratedContent(content);
+      setKeywords(tags);
       setHasResult(true);
     } catch (error) {
       console.error('Error generating content:', error);
@@ -120,35 +122,59 @@ export default function CreatePage() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-2 mb-4">
-                <PenSquare className="w-4 h-4 text-red-500" />
-                <span className="font-semibold text-sm">今天想写点什么？</span>
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <PenSquare className="w-4 h-4 text-red-500" />
+                </div>
+                <span className="font-semibold text-sm text-gray-800">今天想写点什么？</span>
               </div>
               <textarea 
                 placeholder="输入一个简单的想法，比如：买了一个超好用的平价键盘..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[120px] resize-none"
+                className="w-full px-4 py-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[150px] resize-none text-gray-700"
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
               />
               <button 
                 onClick={handleGenerate}
                 disabled={!idea.trim() || isGenerating}
-                className="w-full mt-4 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full mt-4 bg-gradient-to-r from-red-500 to-rose-500 text-white py-3 rounded-lg hover:from-red-600 hover:to-rose-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-red-200"
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4 animate-spin" /> AI 爆发灵感中...
+                    <Loader2 className="w-4 h-4 animate-spin" /> AI 爆发灵感中...
                   </span>
-                ) : '一键生成笔记'}
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4" /> 一键生成笔记
+                  </span>
+                )}
               </button>
             </div>
             
             {userProfile && (
-              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
-                <h3 className="font-semibold text-sm text-gray-700 mb-2">当前创作人格</h3>
-                <div className="text-xs text-gray-600 space-y-1">
-                  <p>风格：{userProfile.contentStyle}</p>
-                  <p>内容偏好：{userProfile.contentGoals?.[0] || '生活分享'}</p>
-                  <p>长度偏好：{userProfile.preferredLength === 'short' ? '短篇' : userProfile.preferredLength === 'medium' ? '中篇' : '长篇'}</p>
+              <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl border border-red-100 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-red-500" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-gray-800">当前创作人格</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-white rounded-lg p-3 border border-red-100">
+                    <span className="text-gray-500 block mb-1">风格</span>
+                    <span className="font-medium text-gray-800">{userProfile.contentStyle}</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-red-100">
+                    <span className="text-gray-500 block mb-1">内容偏好</span>
+                    <span className="font-medium text-gray-800">{userProfile.contentGoals?.[0] || '生活分享'}</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-red-100">
+                    <span className="text-gray-500 block mb-1">年龄范围</span>
+                    <span className="font-medium text-gray-800">{userProfile.ageRange}</span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-red-100">
+                    <span className="text-gray-500 block mb-1">长度偏好</span>
+                    <span className="font-medium text-gray-800">{userProfile.preferredLength === 'short' ? '短篇' : userProfile.preferredLength === 'medium' ? '中篇' : '长篇'}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -156,13 +182,20 @@ export default function CreatePage() {
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-gray-800 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <Check className="w-4 h-4 text-green-500" />
+                </div>
+                <h3 className="font-semibold text-gray-800">生成成功！</h3>
+              </div>
+              
+              <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-gray-800 mb-6 p-4 bg-gray-50 rounded-lg">
                 {generatedContent}
               </div>
               
               <div className="flex flex-wrap gap-2 mb-6">
                 {keywords.map((keyword, index) => (
-                  <span key={index} className="px-2 py-1 bg-red-50 text-red-600 rounded-full text-xs">
+                  <span key={index} className="px-2 py-1 bg-red-50 text-red-600 rounded-full text-xs font-medium">
                     #{keyword}
                   </span>
                 ))}
@@ -171,31 +204,46 @@ export default function CreatePage() {
               <div className="flex gap-3">
                 <button 
                   onClick={handleCopy}
-                  className="flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 font-medium flex items-center justify-center gap-2 shadow-sm shadow-red-200"
                 >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {copied ? '已复制' : '复制正文'}
+                  {copied ? (
+                    <>
+                      <Check className="w-4 h-4" /> 已复制
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" /> 复制正文
+                    </>
+                  )}
                 </button>
                 <button 
                   onClick={() => {
                     alert("内容已保存到草稿！");
                     router.push("/dashboard");
                   }}
-                  className="flex-1 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                  className="flex-1 py-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
                   保存到草稿
                 </button>
               </div>
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-lg mb-4">反馈与优化</h3>
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <MessageSquarePlus className="w-4 h-4 text-blue-500" />
+                </div>
+                <h3 className="font-semibold text-gray-800">反馈与优化</h3>
+              </div>
               <div className="space-y-4">
                 <div>
                   <span className="text-xs text-gray-500 mb-2 block">一键微调方向：</span>
                   <div className="flex flex-wrap gap-2">
                     {['短一点', '更干货点', '加多点表情包', '更像吐槽'].map((tag) => (
-                      <span key={tag} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs cursor-pointer hover:bg-red-50 hover:text-red-600 transition-colors border border-gray-200">
+                      <span key={tag} className="px-3 py-1.5 bg-white text-gray-700 rounded-full text-xs cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors border border-blue-100">
                         {tag}
                       </span>
                     ))}
@@ -207,8 +255,9 @@ export default function CreatePage() {
                     setHasResult(false);
                     setIdea('');
                   }}
-                  className="w-full py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                  className="w-full py-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors flex items-center justify-center gap-2"
                 >
+                  <Sparkles className="w-4 h-4" />
                   重新生成
                 </button>
               </div>

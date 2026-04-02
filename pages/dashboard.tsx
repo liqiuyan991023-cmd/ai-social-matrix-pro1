@@ -1,18 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Sparkles, TrendingUp, ChevronRight, Zap, Target, Home, User, PenSquare, History } from 'lucide-react';
+import { Sparkles, TrendingUp, ChevronRight, Zap, Target, Home, User, PenSquare, History, Loader2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
 import CreationHistory from '../components/dashboard/CreationHistory';
+import { TavilyService } from '../lib/services/tavilyService';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [creations, setCreations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hotTopicsIndex, setHotTopicsIndex] = useState(0);
+  const [hotTopics, setHotTopics] = useState<any[]>([]);
+  const [isLoadingHotTopics, setIsLoadingHotTopics] = useState(false);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  
+  // 创建TavilyService实例
+  const tavilyService = new TavilyService();
 
   useEffect(() => {
     // 检查是否有 userId 存储
@@ -25,28 +30,25 @@ export default function DashboardPage() {
 
     // 获取用户的创作历史
     fetchCreations(storedUserId);
+    // 获取热点话题
+    fetchHotTopics();
   }, [router]);
 
-  const hotTopics = [
-    [
-      { title: "2024极简桌面改造指南", tag: "数码", heat: "98k", url: "https://www.xiaohongshu.com/search_result?keyword=2024%E6%9E%81%E7%AE%80%E6%A1%8C%E9%9D%A2%E6%94%B9%E9%80%A0%E6%8C%87%E5%8D%97" },
-      { title: "早起10分钟的微习惯改变人生", tag: "个人成长", heat: "85k", url: "https://www.xiaohongshu.com/search_result?keyword=%E6%97%A9%E8%B5%B010%E5%88%86%E9%92%9F%E7%9A%84%E5%BE%AE%E4%B9%A0%E6%83%AF%E6%94%B9%E5%8F%98%E4%BA%BA%E7%94%9F" },
-      { title: "这绝对是被严重低估的宝藏APP", tag: "效率工具", heat: "120k", url: "https://www.xiaohongshu.com/search_result?keyword=%E8%B4%AD%E8%97%8FAPP" }
-    ],
-    [
-      { title: "2024年最值得入手的数码产品", tag: "数码", heat: "156k", url: "https://www.xiaohongshu.com/search_result?keyword=2024%E5%B9%B4%E6%9C%80%E5%80%BC%E5%BE%97%E5%85%A5%E6%89%8B%E7%9A%84%E6%95%B0%E7%A0%81%E4%BA%A7%E5%93%81" },
-      { title: "办公室必备的5个解压神器", tag: "职场", heat: "78k", url: "https://www.xiaohongshu.com/search_result?keyword=%E5%8A%9E%E5%85%AC%E5%AE%A4%E5%BF%85%E5%A4%87%E7%9A%845%E4%B8%AA%E8%A7%A3%E5%8E%8B%E7%A5%9E%E5%99%A8" },
-      { title: "一周不重样的快手早餐", tag: "美食", heat: "92k", url: "https://www.xiaohongshu.com/search_result?keyword=%E4%B8%80%E5%91%A8%E4%B8%8D%E9%87%8D%E6%A0%B7%E7%9A%84%E5%BF%AB%E6%89%8B%E6%97%A9%E9%A4%90" }
-    ],
-    [
-      { title: "极简主义生活方式指南", tag: "生活方式", heat: "110k", url: "https://www.xiaohongshu.com/search_result?keyword=%E6%9E%81%E7%AE%80%E4%B8%BB%E4%B9%89%E7%94%9F%E6%B4%BB%E6%96%B9%E5%BC%8F%E6%8C%87%E5%8D%97" },
-      { title: "2024年流行的家居装饰趋势", tag: "家居", heat: "89k", url: "https://www.xiaohongshu.com/search_result?keyword=2024%E5%B9%B4%E6%B5%81%E8%A1%8C%E7%9A%84%E5%AE%B6%E5%B1%85%E8%A3%85%E9%A5%B0%E8%B6%8B%E5%8A%BF" },
-      { title: "高效时间管理的5个技巧", tag: "效率", heat: "135k", url: "https://www.xiaohongshu.com/search_result?keyword=%E9%AB%98%E6%95%88%E6%97%B6%E9%97%B4%E7%AE%A1%E7%90%86%E7%9A%845%E4%B8%AA%E6%8A%80%E5%B7%A7" }
-    ]
-  ];
+  const fetchHotTopics = async () => {
+    setIsLoadingHotTopics(true);
+    try {
+      // 从Tavily API获取热点话题
+      const topics = await tavilyService.getHotTopics();
+      setHotTopics(topics);
+    } catch (error) {
+      console.error('Error fetching hot topics:', error);
+    } finally {
+      setIsLoadingHotTopics(false);
+    }
+  };
 
   const handleRefreshHotTopics = () => {
-    setHotTopicsIndex((prevIndex) => (prevIndex + 1) % hotTopics.length);
+    fetchHotTopics();
   };
 
   const generateAiSummary = async (creations: any[]) => {
@@ -157,9 +159,16 @@ export default function DashboardPage() {
       
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Greeting */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">你好，创作者</h2>
-          <p className="text-sm text-gray-600 mt-1">今天想分享点什么？</p>
+        <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-xl p-6 border border-red-100">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">你好，创作者</h2>
+              <p className="text-sm text-gray-600 mt-1">今天想分享点什么？</p>
+            </div>
+          </div>
         </div>
 
         {/* Call to Action Card */}
@@ -180,31 +189,64 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Hot Topics (Simulated Tavily API Concept) */}
+        {/* Hot Topics (Tavily API Integration) */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-orange-500" />
               <h3 className="font-semibold text-base">近期爆款灵感</h3>
             </div>
-            <span className="text-xs text-gray-600 cursor-pointer hover:text-red-500 transition-colors" onClick={handleRefreshHotTopics}>换一批</span>
+            <button 
+              onClick={handleRefreshHotTopics}
+              disabled={isLoadingHotTopics}
+              className="text-xs text-gray-600 cursor-pointer hover:text-red-500 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoadingHotTopics ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" /> 加载中...
+                </>
+              ) : (
+                '换一批'
+              )}
+            </button>
           </div>
           
           <div className="space-y-3">
-            {hotTopics[hotTopicsIndex].map((item, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center justify-between hover:border-red-300 transition-colors cursor-pointer" onClick={() => window.open(item.url, '_blank')}>
-                <div className="space-y-1">
-                  <h4 className="font-medium text-sm text-gray-800">{item.title}</h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full font-normal">{item.tag}</span>
-                    <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
-                      <Zap className="w-3 h-3 text-orange-400" /> {item.heat} 热度
-                    </span>
+            {isLoadingHotTopics ? (
+              // 加载状态
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 animate-pulse">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+              ))
+            ) : hotTopics.length > 0 ? (
+              // 显示热点话题
+              hotTopics.map((item, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center justify-between hover:border-red-300 transition-colors cursor-pointer" onClick={() => window.open(item.url, '_blank')}>
+                  <div className="space-y-1">
+                    <h4 className="font-medium text-sm text-gray-800">{item.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full font-normal">{item.tag}</span>
+                      <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                        <Zap className="w-3 h-3 text-orange-400" /> {item.heat} 热度
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </div>
+              ))
+            ) : (
+              // 无数据状态
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+                <p className="text-gray-600">暂无热点灵感，点击"换一批"试试</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -228,27 +270,46 @@ export default function DashboardPage() {
 
         {/* Creation History */}
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <h3 className="font-semibold text-lg">创作历史</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-red-500" />
+              <h3 className="font-semibold text-lg">创作历史</h3>
+            </div>
+            <button 
+              onClick={() => router.push('/history')}
+              className="text-xs text-red-500 hover:text-red-600 transition-colors"
+            >
+              查看全部
+            </button>
           </div>
           <div className="space-y-4">
             {creations.map(creation => (
-              <div key={creation.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-red-300 transition-colors cursor-pointer">
+              <div 
+                key={creation.id} 
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-red-300 transition-colors cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => router.push(`/creation/${creation.id}`)}
+              >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-gray-800 flex-1">{creation.title}</h3>
-                  <button className="text-gray-400 hover:text-gray-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                    {creation.topic?.category || '生活方式'}
+                  </span>
                 </div>
 
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                   {creation.content}
                 </p>
 
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                  <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {creation.keywords?.tags?.slice(0, 3).map((tag: string, index: number) => (
+                    <span key={index} className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit' })}</span>
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-500" fill="red" viewBox="0 0 20 20">

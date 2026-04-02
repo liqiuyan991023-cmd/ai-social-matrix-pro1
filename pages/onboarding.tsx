@@ -153,68 +153,60 @@ export default function OnboardingPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-3">4. 创作内容偏好 *</label>
                     <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentPreference === '生活分享' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '生活分享' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentPreference: '生活分享' })}
                       >
                         生活分享
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentPreference === '专业干货' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      </div>
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '专业干货' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentPreference: '专业干货' })}
                       >
                         专业干货
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentPreference === '兴趣爱好' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      </div>
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '兴趣爱好' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentPreference: '兴趣爱好' })}
                       >
                         兴趣爱好
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentPreference === '职场经验' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      </div>
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '职场经验' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentPreference: '职场经验' })}
                       >
                         职场经验
-                      </button>
+                      </div>
                     </div>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-3">5. 表达风格 *</label>
                     <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentStyle === '亲切自然' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '亲切自然' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentStyle: '亲切自然' })}
                       >
                         亲切自然
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentStyle === '专业细致' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      </div>
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '专业细致' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentStyle: '专业细致' })}
                       >
                         专业细致
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentStyle === '幽默风趣' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      </div>
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '幽默风趣' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentStyle: '幽默风趣' })}
                       >
                         幽默风趣
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-4 py-3 border rounded-lg text-center ${formData.contentStyle === '情感共鸣' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300'}`}
+                      </div>
+                      <div
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '情感共鸣' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
                         onClick={() => setFormData({ ...formData, contentStyle: '情感共鸣' })}
                       >
                         情感共鸣
-                      </button>
+                      </div>
                     </div>
                   </div>
                   
