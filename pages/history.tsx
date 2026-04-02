@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { History as HistoryIcon, Sparkles } from 'lucide-react';
+import { History as HistoryIcon, Sparkles, MessageSquare, RefreshCw } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
+import { ContentGenerationService } from '../lib/services/contentGenerationService';
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -11,6 +12,9 @@ export default function HistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  
+  // 创建服务实例
+  const contentService = new ContentGenerationService();
 
   useEffect(() => {
     // 检查是否有 userId 存储
@@ -29,16 +33,48 @@ export default function HistoryPage() {
     setIsGeneratingSummary(true);
     try {
       // 基于创作内容生成总结
-      // 这里模拟大语言模型的处理逻辑
-      const summaries = [
-        '根据你最近 3 篇笔记的分析，你的"情绪化表达"数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。',
-        '分析了你的近期创作，发现你在"生活分享"领域表现突出，尤其是关于职场和生活方式的内容。建议尝试结合热点话题，提高内容的传播度。',
-        '你的创作风格偏向"亲切自然"，这种风格在小红书平台非常受欢迎。建议在内容中增加更多个人故事和真实体验，进一步增强与读者的连接。'
-      ];
+      // 构建prompt
+      const creationTexts = creations.map(c => c.content).join('\n\n');
+      const creationTitles = creations.map(c => c.title).join('\n');
       
-      // 随机选择一个总结
-      const randomSummary = summaries[Math.floor(Math.random() * summaries.length)];
-      setAiSummary(randomSummary);
+      const prompt = `基于以下用户的创作历史，生成一份AI创作总结：
+
+创作标题：
+${creationTitles}
+
+创作内容：
+${creationTexts}
+
+要求：
+1. 分析用户的创作风格和特点
+2. 指出用户的创作优势
+3. 提供具体的改进建议
+4. 内容要专业、有针对性
+5. 语言要自然、友好
+6. 适合小红书平台的创作者`;
+      
+      // 调用大语言模型API
+      const response = await fetch('/api/content/summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAiSummary(data.summary);
+      } else {
+        // 如果API调用失败，使用默认总结
+        const summaries = [
+          '根据你最近 3 篇笔记的分析，你的"情绪化表达"数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。',
+          '分析了你的近期创作，发现你在"生活分享"领域表现突出，尤其是关于职场和生活方式的内容。建议尝试结合热点话题，提高内容的传播度。',
+          '你的创作风格偏向"亲切自然"，这种风格在小红书平台非常受欢迎。建议在内容中增加更多个人故事和真实体验，进一步增强与读者的连接。'
+        ];
+        const randomSummary = summaries[Math.floor(Math.random() * summaries.length)];
+        setAiSummary(randomSummary);
+      }
     } catch (error) {
       console.error('Error generating AI summary:', error);
       setAiSummary('AI 创作总结生成失败，请稍后再试。');
@@ -49,13 +85,67 @@ export default function HistoryPage() {
 
   const fetchCreations = async (userId: string) => {
     try {
-      // 这里应该调用 API 获取创作历史
-      // 由于我们没有实现这个 API，暂时使用模拟数据
+      // 从ContentGenerationService获取创作历史
       setIsLoading(true);
-      // 模拟 API 调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const userCreations = await contentService.getUserCreations(userId);
       
-      // 模拟创作历史数据
+      if (userCreations.length > 0) {
+        setCreations(userCreations);
+        // 生成 AI 创作总结
+        await generateAiSummary(userCreations);
+      } else {
+        // 如果没有创作历史，使用模拟数据
+        const mockCreations = [
+          {
+            id: 'creation_1',
+            title: '打工人的救命神器分享',
+            content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
+            topic: {
+              category: '生活方式'
+            },
+            keywords: {
+              tags: ['打工人', '桌面改造', '好物分享']
+            },
+            createdAt: Date.now() - 86400000, // 1天前
+            likes: 128,
+            views: 1200
+          },
+          {
+            id: 'creation_2',
+            title: '极简穿搭：周五下班直接去约会',
+            content: '谁懂啊！这种一衣多穿的快乐。今天这套Look真是闭眼穿都好看...',
+            topic: {
+              category: '时尚'
+            },
+            keywords: {
+              tags: ['极简穿搭', '职场穿搭', '约会穿搭']
+            },
+            createdAt: Date.now() - 172800000, // 2天前
+            likes: 450,
+            views: 3500
+          },
+          {
+            id: 'creation_3',
+            title: '探店 | 这家藏在巷子里的咖啡馆',
+            content: '终于被我挖到了！人少安静，咖啡好喝，超级适合带电脑来办公...',
+            topic: {
+              category: '探店'
+            },
+            keywords: {
+              tags: ['咖啡馆', '探店', '办公好去处']
+            },
+            createdAt: Date.now() - 259200000, // 3天前
+            likes: 65,
+            views: 800
+          }
+        ];
+        setCreations(mockCreations);
+        // 生成 AI 创作总结
+        await generateAiSummary(mockCreations);
+      }
+    } catch (error) {
+      console.error('Error fetching creations:', error);
+      // 发生错误时使用模拟数据
       const mockCreations = [
         {
           id: 'creation_1',
@@ -70,42 +160,10 @@ export default function HistoryPage() {
           createdAt: Date.now() - 86400000, // 1天前
           likes: 128,
           views: 1200
-        },
-        {
-          id: 'creation_2',
-          title: '极简穿搭：周五下班直接去约会',
-          content: '谁懂啊！这种一衣多穿的快乐。今天这套Look真是闭眼穿都好看...',
-          topic: {
-            category: '时尚'
-          },
-          keywords: {
-            tags: ['极简穿搭', '职场穿搭', '约会穿搭']
-          },
-          createdAt: Date.now() - 172800000, // 2天前
-          likes: 450,
-          views: 3500
-        },
-        {
-          id: 'creation_3',
-          title: '探店 | 这家藏在巷子里的咖啡馆',
-          content: '终于被我挖到了！人少安静，咖啡好喝，超级适合带电脑来办公...',
-          topic: {
-            category: '探店'
-          },
-          keywords: {
-            tags: ['咖啡馆', '探店', '办公好去处']
-          },
-          createdAt: Date.now() - 259200000, // 3天前
-          likes: 65,
-          views: 800
         }
       ];
-      
       setCreations(mockCreations);
-      // 生成 AI 创作总结
       await generateAiSummary(mockCreations);
-    } catch (error) {
-      console.error('Error fetching creations:', error);
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +172,16 @@ export default function HistoryPage() {
   const handleCreationClick = (creation: any) => {
     // 跳转到创作内容界面
     router.push(`/creation/${creation.id}`);
+  };
+
+  const handleFeedback = (creation: any) => {
+    // 打开反馈对话框
+    alert('反馈功能开发中，敬请期待！');
+  };
+
+  const handleOptimize = (creation: any) => {
+    // 打开优化对话框
+    alert('优化功能开发中，敬请期待！');
   };
 
   if (!userId) {
@@ -162,17 +230,16 @@ export default function HistoryPage() {
             {creations.map(creation => (
               <div 
                 key={creation.id} 
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-red-300 transition-colors cursor-pointer hover:shadow-md"
-                onClick={() => handleCreationClick(creation)}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-red-300 transition-colors hover:shadow-md"
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-800 flex-1">{creation.title}</h3>
+                  <h3 className="font-semibold text-gray-800 flex-1 cursor-pointer" onClick={() => handleCreationClick(creation)}>{creation.title}</h3>
                   <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
                     {creation.topic?.category || '生活方式'}
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2 cursor-pointer" onClick={() => handleCreationClick(creation)}>
                   {creation.content}
                 </p>
 
@@ -184,22 +251,25 @@ export default function HistoryPage() {
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                   <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit' })}</span>
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-500" fill="red" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      {creation.likes}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      {creation.views} 曝光
-                    </span>
-                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleFeedback(creation)}
+                    className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors flex items-center justify-center gap-1 text-xs"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    反馈
+                  </button>
+                  <button
+                    onClick={() => handleOptimize(creation)}
+                    className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors flex items-center justify-center gap-1 text-xs"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    优化
+                  </button>
                 </div>
               </div>
             ))}

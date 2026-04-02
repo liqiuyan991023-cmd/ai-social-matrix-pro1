@@ -136,7 +136,7 @@ export default function CreatePage() {
               <button 
                 onClick={handleGenerate}
                 disabled={!idea.trim() || isGenerating}
-                className="w-full mt-4 bg-gradient-to-r from-red-500 to-rose-500 text-white py-3 rounded-lg hover:from-red-600 hover:to-rose-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-red-200"
+                className="w-full mt-4 bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm shadow-red-200"
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center gap-2">
@@ -204,7 +204,7 @@ export default function CreatePage() {
               <div className="flex gap-3">
                 <button 
                   onClick={handleCopy}
-                  className="flex-1 py-3 bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-lg hover:from-red-600 hover:to-rose-600 font-medium flex items-center justify-center gap-2 shadow-sm shadow-red-200"
+                  className="flex-1 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 shadow-sm shadow-red-200"
                 >
                   {copied ? (
                     <>
