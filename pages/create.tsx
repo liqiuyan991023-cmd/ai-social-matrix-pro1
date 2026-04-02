@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import useSWR from "swr";
+import { PenSquare, Copy, Image as ImageIcon, KeyRound, Check, Sparkles, MessageSquarePlus, ArrowLeft } from 'lucide-react';
+import TopBar from "../components/TopBar";
 import TopicSelector from "../components/create/TopicSelector";
 import ContentGenerator from "../components/create/ContentGenerator";
 import FeedbackPanel from "../components/create/FeedbackPanel";
@@ -11,6 +13,7 @@ export default function CreatePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<TopicRecommendation | null>(null);
   const [generatedCreation, setGeneratedCreation] = useState<any | null>(null);
+  const [copiedTab, setCopiedTab] = useState<string | null>(null);
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -20,6 +23,12 @@ export default function CreatePage() {
     }
     setUserId(storedUserId);
   }, [router]);
+
+  const handleCopy = (text: string, tab: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedTab(tab);
+    setTimeout(() => setCopiedTab(null), 2000);
+  };
 
   if (!userId) {
     return (
@@ -33,67 +42,76 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center justify-center space-x-8">
-            <div className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                !selectedTopic ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-              }`}>
-                {!selectedTopic ? '1' : '✓'}
+    <div className="min-h-screen bg-gray-50">
+      <TopBar 
+        title={!selectedTopic ? "选择选题" : generatedCreation ? "反馈优化" : "生成内容"}
+        showBackButton={selectedTopic !== null}
+        onBack={() => {
+          if (generatedCreation) {
+            setGeneratedCreation(null);
+          } else if (selectedTopic) {
+            setSelectedTopic(null);
+          }
+        }}
+      />
+      
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {!selectedTopic && (
+          <TopicSelector
+            userId={userId}
+            onSelect={setSelectedTopic}
+            selectedTopic={selectedTopic}
+          />
+        )}
+
+        {selectedTopic && !generatedCreation && (
+          <ContentGenerator
+            userId={userId}
+            topic={selectedTopic}
+            onComplete={setGeneratedCreation}
+          />
+        )}
+
+        {generatedCreation && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 relative overflow-hidden mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <PenSquare className="w-4 h-4 text-blue-600" />
+                <h3 className="font-semibold text-lg">生成结果</h3>
               </div>
-              <span className={`ml-2 text-sm font-medium ${
-                !selectedTopic ? 'text-blue-600' : 'text-gray-500'
-              }`}>选择选题</span>
-            </div>
-
-            <div className="w-16 h-0.5 bg-gray-300"></div>
-
-            <div className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                !generatedCreation ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-              }`}>
-                {!generatedCreation ? '2' : '✓'}
+              
+              <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-gray-800 mb-8">
+                {generatedCreation.content}
               </div>
-              <span className={`ml-2 text-sm font-medium ${
-                !generatedCreation ? 'text-blue-600' : 'text-gray-500'
-              }`}>生成内容</span>
-            </div>
-
-            <div className="w-16 h-0.5 bg-gray-300"></div>
-
-            <div className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                generatedCreation ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-500'
-              }`}>
-                3
+              
+              <div className="flex flex-wrap gap-2 mb-8">
+                {generatedCreation.keywords?.tags?.map((tag: string, index: number) => (
+                  <span key={index} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs">
+                    #{tag}
+                  </span>
+                ))}
               </div>
-              <span className={`ml-2 text-sm font-medium ${
-                generatedCreation ? 'text-blue-600' : 'text-gray-500'
-              }`}>反馈优化</span>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => handleCopy(generatedCreation.content, 'copy')}
+                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+                >
+                  {copiedTab === 'copy' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiedTab === 'copy' ? '已复制' : '复制正文'}
+                </button>
+                <button 
+                  onClick={() => {
+                    alert("内容已保存到草稿！");
+                    router.push("/dashboard");
+                  }}
+                  className="flex-1 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                >
+                  保存到草稿
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {!selectedTopic && (
-            <TopicSelector
-              userId={userId}
-              onSelect={setSelectedTopic}
-              selectedTopic={selectedTopic}
-            />
-          )}
-
-          {selectedTopic && !generatedCreation && (
-            <ContentGenerator
-              userId={userId}
-              topic={selectedTopic}
-              onComplete={setGeneratedCreation}
-            />
-          )}
-
-          {generatedCreation && (
+            
             <FeedbackPanel
               userId={userId}
               creationId={generatedCreation.id}
@@ -101,34 +119,8 @@ export default function CreatePage() {
                 console.log("Feedback submitted:", feedback);
               }}
             />
-          )}
-        </div>
-
-        <div className="mt-8 flex justify-center space-x-4">
-          {selectedTopic && (
-            <button
-              onClick={() => {
-                setSelectedTopic(null);
-                setGeneratedCreation(null);
-              }}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
-            >
-              返回选题
-            </button>
-          )}
-
-          {generatedCreation && (
-            <button
-              onClick={() => {
-                alert("内容已保存到草稿！");
-                router.push("/dashboard");
-              }}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
-            >
-              保存到草稿
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

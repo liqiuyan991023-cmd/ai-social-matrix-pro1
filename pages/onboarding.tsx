@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import useSWR, { mutate } from "swr";
+import { Sparkles, Target } from 'lucide-react';
+import TopBar from "../components/TopBar";
 import Questionnaire from "../components/onboarding/Questionnaire";
 import PersonaDisplay from "../components/onboarding/PersonaDisplay";
 
@@ -50,14 +52,32 @@ export default function OnboardingPage() {
   );
   
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      <TopBar title="创作人格设置" showIcon={true} />
+      
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {!personaData?.profile ? (
-          <Questionnaire onSubmit={createProfile} isLoading={isLoading} />
+          <div className="space-y-6">
+            <div className="bg-gradient-to-br from-primary to-rose-500 border-none text-white shadow-lg shadow-primary/20 rounded-xl p-5">
+              <div className="inline-flex items-center gap-1 bg-white/20 px-2 py-1 rounded-md text-xs font-medium backdrop-blur-sm mb-3">
+                <Target className="w-3 h-3" />
+                <span>核心定位</span>
+              </div>
+              <h3 className="font-semibold text-lg leading-tight mb-2">创建你的专属创作人格</h3>
+              <p className="text-sm text-white/80">花2分钟回答几个问题，AI将为你定制独特的创作风格</p>
+            </div>
+            
+            <Questionnaire onSubmit={createProfile} isLoading={isLoading} />
+          </div>
         ) : personaLoading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">正在生成你的创作人格...</p>
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center animate-pulse">
+              <Sparkles className="w-8 h-8 text-white" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">正在生成你的创作人格</h3>
+              <p className="text-sm text-gray-600">AI正在分析你的特点，打造专属的创作风格...</p>
+            </div>
           </div>
         ) : (
           <PersonaDisplay 

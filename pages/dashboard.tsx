@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { Sparkles, TrendingUp, ChevronRight, Zap, Target } from 'lucide-react';
+import TopBar from '../components/TopBar';
 import CreationHistory from '../components/dashboard/CreationHistory';
 
 export default function DashboardPage() {
@@ -78,30 +80,90 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">AI Social Matrix Pro</h1>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => router.push('/create')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
-            >
-              开始创作
-            </button>
-            <div className="text-sm text-gray-600">
-              欢迎回来！
+      <TopBar title="AI Social Matrix Pro" showIcon={true} />
+      
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Greeting */}
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">你好，创作者</h2>
+          <p className="text-sm text-gray-600 mt-1">今天想分享点什么？</p>
+        </div>
+
+        {/* Call to Action Card */}
+        <div className="bg-gradient-to-br from-blue-600 to-purple-600 border-none text-white shadow-lg shadow-blue-200 rounded-xl p-5 flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1 bg-white/20 px-2 py-1 rounded-md text-xs font-medium backdrop-blur-sm">
+              <Target className="w-3 h-3" />
+              <span>核心定位</span>
             </div>
+            <h3 className="font-semibold text-lg leading-tight">开始你的创作之旅</h3>
+            <p className="text-sm text-white/80">AI 助力，轻松生成高质量内容</p>
+          </div>
+          <button 
+            onClick={() => router.push('/create')}
+            className="w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shrink-0 hover:scale-105 transition-transform"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Hot Topics (Simulated Tavily API Concept) */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-orange-500" />
+              <h3 className="font-semibold text-base">近期爆款灵感</h3>
+            </div>
+            <span className="text-xs text-gray-600 cursor-pointer">换一批</span>
+          </div>
+          
+          <div className="space-y-3">
+            {[
+              { title: "2024极简桌面改造指南", tag: "数码", heat: "98k" },
+              { title: "早起10分钟的微习惯改变人生", tag: "个人成长", heat: "85k" },
+              { title: "这绝对是被严重低估的宝藏APP", tag: "效率工具", heat: "120k" }
+            ].map((item, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center justify-between hover:border-blue-300 transition-colors cursor-pointer" onClick={() => router.push('/create')}>
+                <div className="space-y-1">
+                  <h4 className="font-medium text-sm text-gray-800">{item.title}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full font-normal">{item.tag}</span>
+                    <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                      <Zap className="w-3 h-3 text-orange-400" /> {item.heat} 热度
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+            ))}
           </div>
         </div>
 
-        <CreationHistory
-          creations={creations}
-          isLoading={isLoading}
-          onSelectCreation={(creation) => {
-            console.log('Selected creation:', creation);
-            // 这里可以导航到创作详情页
-          }}
-        />
+        {/* AI Growth Summary */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-purple-500" />
+            <h3 className="font-semibold text-base">AI 创作总结</h3>
+          </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-gray-700 leading-relaxed">
+            根据你最近 3 篇笔记的分析，你的**“情绪化表达”**数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。
+          </div>
+        </div>
+
+        {/* Creation History */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="font-semibold text-lg">创作历史</h3>
+          </div>
+          <CreationHistory
+            creations={creations}
+            isLoading={isLoading}
+            onSelectCreation={(creation) => {
+              console.log('Selected creation:', creation);
+              // 这里可以导航到创作详情页
+            }}
+          />
+        </div>
       </div>
     </div>
   );
