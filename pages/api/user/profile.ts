@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { UserProfileService } from "@/lib/services/userProfileService";
+import { UserProfileService } from "../../../lib/services/userProfileService";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const requiredFields = ["userId", "ageRange", "profession", "interests", "expertise", "contentGoals", "contentStyle", "preferredLength"];
       for (const field of requiredFields) {
         if (!profileData[field]) {
-          return res.status(400).json({ error: \`Missing required field: \${field}\` });
+          return res.status(400).json({ error: `Missing required field: ${field}` });
         }
       }
       
@@ -43,6 +43,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } else {
     res.setHeader("Allow", ["GET", "POST"]);
-    res.status(405).end(\`Method \${req.method} Not Allowed\`);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

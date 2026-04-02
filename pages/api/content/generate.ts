@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { ContentGenerationService } from "@/lib/services/contentGenerationService";
-import { UserProfileService } from "@/lib/services/userProfileService";
-import { TopicRecommendationService } from "@/lib/services/topicRecommendationService";
+import { ContentGenerationService } from "../../../lib/services/contentGenerationService";
+import { UserProfileService } from "../../../lib/services/userProfileService";
+import { TopicRecommendationService } from "../../../lib/services/topicRecommendationService";
 
 export const config = {
   api: {
@@ -12,7 +12,7 @@ export const config = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
-    res.status(405).end(\`Method \${req.method} Not Allowed\`);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
     return;
   }
   
@@ -58,24 +58,24 @@ async function generateContentStream(
   topic: any,
   regenerate?: string
 ) {
-  res.write(\`data: \${JSON.stringify({ stage: "title", content: "" })}\n\n\`);
+  res.write(`data: ${JSON.stringify({ stage: "title", content: "" })}\n\n`);
   
   const titles = await contentService.generateTitle(userProfile, topic, regenerate);
   const selectedTitle = titles[0];
   
-  res.write(\`data: \${JSON.stringify({ stage: "title", content: selectedTitle })}\n\n\`);
+  res.write(`data: ${JSON.stringify({ stage: "title", content: selectedTitle })}\n\n`);
   
-  res.write(\`data: \${JSON.stringify({ stage: "content", content: "" })}\n\n\`);
+  res.write(`data: ${JSON.stringify({ stage: "content", content: "" })}\n\n`);
   
   const content = await contentService.generateContent(userProfile, topic, selectedTitle, regenerate);
   
-  res.write(\`data: \${JSON.stringify({ stage: "content", content })}\n\n\`);
+  res.write(`data: ${JSON.stringify({ stage: "content", content })}\n\n`);
   
-  res.write(\`data: \${JSON.stringify({ stage: "keywords", content: {} })}\n\n\`);
+  res.write(`data: ${JSON.stringify({ stage: "keywords", content: {} })}\n\n`);
   
   const keywords = await contentService.generateKeywords(userProfile, topic, selectedTitle, content);
   
-  res.write(\`data: \${JSON.stringify({ stage: "keywords", content: keywords })}\n\n\`);
+  res.write(`data: ${JSON.stringify({ stage: "keywords", content: keywords })}\n\n`);
   
   const creationId = await contentService.saveCreation(userProfile.userId, {
     title: selectedTitle,
@@ -84,10 +84,10 @@ async function generateContentStream(
     topic,
   });
   
-  res.write(\`data: \${JSON.stringify({ 
+  res.write(`data: ${JSON.stringify({ 
     stage: "complete", 
     content: { id: creationId, title: selectedTitle, content, keywords } 
-  })}\n\n\`);
+  })}\n\n`);
   
   res.write("data: [DONE]\n\n");
   res.end();

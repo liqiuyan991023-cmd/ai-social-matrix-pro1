@@ -1,11 +1,11 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { TopicRecommendationService } from "@/lib/services/topicRecommendationService";
-import { UserProfileService } from "@/lib/services/userProfileService";
+import { TopicRecommendationService } from "../../../lib/services/topicRecommendationService";
+import { UserProfileService } from "../../../lib/services/userProfileService";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
-    res.status(405).end(\`Method \${req.method} Not Allowed\`);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
     return;
   }
   

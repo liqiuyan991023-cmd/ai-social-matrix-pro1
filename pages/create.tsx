@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { useQuery } from "swr";
-import TopicSelector from "@/components/create/TopicSelector";
-import ContentGenerator from "@/components/create/ContentGenerator";
-import FeedbackPanel from "@/components/create/FeedbackPanel";
-import { TopicRecommendation } from "@/lib/types";
+import useSWR from "swr";
+import TopicSelector from "../components/create/TopicSelector";
+import ContentGenerator from "../components/create/ContentGenerator";
+import FeedbackPanel from "../components/create/FeedbackPanel";
+import { TopicRecommendation } from "../lib/types";
 
 export default function CreatePage() {
   const router = useRouter();

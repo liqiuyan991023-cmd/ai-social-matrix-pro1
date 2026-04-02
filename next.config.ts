@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
 
   // 隐藏 X-Powered-By 响应头，提升安全性
   poweredByHeader: false,
+
+  // Turbopack 配置
+  turbopack: {},
 };
 
 export default nextConfig;

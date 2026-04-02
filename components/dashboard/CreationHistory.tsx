@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { format } from "date-fns";
 
 interface CreationHistoryProps {
   creations: any[];
@@ -10,7 +9,7 @@ interface CreationHistoryProps {
 export default function CreationHistory({ creations, isLoading, onSelectCreation }: CreationHistoryProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  const categories = ["all", ...new Set(creations.map(c => c.topic.category))];
+  const categories = ["all", ...Array.from(new Set(creations.map(c => c.topic.category)))];
   const filteredCreations = selectedCategory === "all"
     ? creations
     : creations.filter(c => c.topic.category === selectedCategory);
@@ -76,7 +75,7 @@ export default function CreationHistory({ creations, isLoading, onSelectCreation
               </p>
 
               <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>{format(new Date(creation.createdAt), 'yyyy-MM-dd HH:mm')}</span>
+                <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                 <div className="flex gap-2">
                   {creation.keywords.tags.slice(0, 3).map((tag: string, index: number) => (
                     <span key={index} className="text-blue-500">#{tag}</span>

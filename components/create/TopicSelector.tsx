@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useSWRConfig } from "swr";
-import { TopicRecommendation } from "@/lib/types";
+import useSWR, { useSWRConfig } from "swr";
+import { TopicRecommendation } from "../../lib/types";
 
 interface TopicSelectorProps {
   userId: string;
@@ -13,7 +13,7 @@ export default function TopicSelector({ userId, onSelect, selectedTopic }: Topic
   const { mutate } = useSWRConfig();
   
   const { data, error, isLoading } = useSWR(
-    \`/api/content/topics?userId=\${userId}\${category ? \`&category=\${category}\` : ""}\`,
+    `/api/content/topics?userId=${userId}${category ? `&category=${category}` : ""}`, 
     async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch topics");
@@ -28,7 +28,7 @@ export default function TopicSelector({ userId, onSelect, selectedTopic }: Topic
   
   const handleCategoryChange = (newCategory: string) => {
     setCategory(newCategory);
-    mutate(\`/api/content/topics?userId=\${userId}\${newCategory ? \`&category=\${newCategory}\` : ""}\`);
+    mutate(`/api/content/topics?userId=${userId}${newCategory ? `&category=${newCategory}` : ""}`);
   };
   
   if (error) {
@@ -72,19 +72,11 @@ export default function TopicSelector({ userId, onSelect, selectedTopic }: Topic
               <div
                 key={topic.id}
                 onClick={() => handleTopicSelect(topic)}
-                className={\`cursor-pointer rounded-lg border p-4 transition-all \${
-                  selectedTopic?.id === topic.id
-                    ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-md"
-                }\`}
+                className={`cursor-pointer rounded-lg border p-4 transition-all ${selectedTopic?.id === topic.id ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200" : "border-gray-200 hover:border-gray-300 hover:shadow-md"}`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-gray-800 flex-1">{topic.title}</h3>
-                  <span className={\`ml-2 px-2 py-1 text-xs rounded-full \${
-                    topic.difficulty === "easy" ? "bg-green-100 text-green-800" :
-                    topic.difficulty === "medium" ? "bg-yellow-100 text-yellow-800" :
-                    "bg-red-100 text-red-800"
-                  }\`}>
+                  <span className={`ml-2 px-2 py-1 text-xs rounded-full ${topic.difficulty === "easy" ? "bg-green-100 text-green-800" : topic.difficulty === "medium" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"}`}>
                     {topic.difficulty === "easy" ? "简单" :
                      topic.difficulty === "medium" ? "中等" : "困难"}
                   </span>

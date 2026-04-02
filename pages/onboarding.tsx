@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { useMutation, useQuery } from "swr";
-import Questionnaire from "@/components/onboarding/Questionnaire";
-import PersonaDisplay from "@/components/onboarding/PersonaDisplay";
+import useSWR, { mutate } from "swr";
+import Questionnaire from "../components/onboarding/Questionnaire";
+import PersonaDisplay from "../components/onboarding/PersonaDisplay";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const { mutate: createProfile, isLoading } = useMutation(
-    "/api/user/profile",
-    async (data: any) => {
+  const createProfile = async (data: any) => {
+    setIsLoading(true);
+    try {
       const response = await fetch("/api/user/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -21,21 +22,20 @@ export default function OnboardingPage() {
         throw new Error("Failed to create profile");
       }
       
-      return response.json();
-    },
-    {
-      onSuccess: (data) => {
-        router.push("/dashboard");
-      },
-      onError: (error) => {
-        console.error("Error creating profile:", error);
-        alert("创建画像失败，请重试");
-      },
+      const result = await response.json();
+      router.push("/dashboard");
+      return result;
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      alert("创建画像失败，请重试");
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-  );
+  };
   
-  const { data: personaData, isLoading: personaLoading } = useQuery(
-    userId ? \`/api/user/profile?userId=\${userId}\` : null,
+  const { data: personaData, isLoading: personaLoading } = useSWR(
+    userId ? `/api/user/profile?userId=${userId}` : null,
     async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) return null;

@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { FeedbackService } from "@/lib/services/feedbackService";
+import { FeedbackService } from "../../lib/services/feedbackService";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {

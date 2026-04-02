@@ -1,9 +1,9 @@
-import { UserProfile } from "@/lib/types";
-import { redis } from "@/lib/db/redis";
-import { callLongCatAPI } from "@/lib/api/longcat";
+import { UserProfile } from "../types";
+import { redis } from "../db/redis";
+import { callLongCatAPI } from "../api/longcat";
 
 export class UserProfileService {
-  private readonly PROFILE_KEY = (userId: string) => \`user:\${userId}:profile\`;
+  private readonly PROFILE_KEY = (userId: string) => `user:${userId}:profile`;
 
   async createProfile(data: Omit<UserProfile, "createdAt" | "updatedAt" | "creativePersona">): Promise<UserProfile> {
     const profile: UserProfile = {
@@ -22,7 +22,7 @@ export class UserProfileService {
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     const data = await redis.get(this.PROFILE_KEY(userId));
-    return data ? JSON.parse(data) : null;
+    return typeof data === 'string' ? JSON.parse(data) : null;
   }
 
   async updateProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
@@ -43,13 +43,13 @@ export class UserProfileService {
     const profile = await this.getProfile(userId);
     if (!profile || profile.creativePersona) return;
 
-    const prompt = \`基于以下用户信息生成创作人格画像：
-    年龄: \${profile.ageRange}
-    职业: \${profile.profession}
-    兴趣: \${profile.interests.join(", ")}
-    专长: \${profile.expertise.join(", ")}
-    创作目标: \${profile.contentGoals.join(", ")}
-    表达风格: \${profile.contentStyle}
+    const prompt = `基于以下用户信息生成创作人格画像：
+    年龄: ${profile.ageRange}
+    职业: ${profile.profession}
+    兴趣: ${profile.interests.join(", ")}
+    专长: ${profile.expertise.join(", ")}
+    创作目标: ${profile.contentGoals.join(", ")}
+    表达风格: ${profile.contentStyle}
     
     请输出JSON格式：
     {
@@ -57,7 +57,7 @@ export class UserProfileService {
       "tone": "表达风格",
       "uniqueAngle": "独特创作角度",
       "contentStrengths": ["优势1", "优势2", "优势3"]
-    }\`;
+    }`;
 
     try {
       const personaJson = await callLongCatAPI(prompt);
