@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TopicRecommendation } from "@/lib/types";
+import { TopicRecommendation } from "../../lib/types/index";
 
 interface ContentGeneratorProps {
   userId: string;
