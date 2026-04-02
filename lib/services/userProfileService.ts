@@ -82,6 +82,14 @@ export class UserProfileService {
       await this.updateProfile(userId, { creativePersona: persona });
     } catch (error) {
       console.error("Failed to generate creative persona:", error);
+      // 如果生成失败，使用默认创作人格
+      const defaultPersona = {
+        personality: "亲切友好，注重生活品质，喜欢分享实用的生活技巧",
+        tone: "温暖自然，口语化，像是和朋友聊天一样",
+        uniqueAngle: "从个人经验出发，分享真实的生活感悟",
+        contentStrengths: ["实用性强", "内容具体", "情感共鸣"]
+      };
+      await this.updateProfile(userId, { creativePersona: defaultPersona });
     }
   }
 }
