@@ -29,6 +29,11 @@ export default function BottomNav() {
     }
   ];
 
+  const handleNavClick = (path: string) => {
+    // 确保正确的导航，避免跳回首页
+    router.push(path);
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
       <div className="max-w-4xl mx-auto">
@@ -40,7 +45,7 @@ export default function BottomNav() {
             return (
               <button
                 key={index}
-                onClick={() => router.push(item.path)}
+                onClick={() => handleNavClick(item.path)}
                 className="flex flex-col items-center justify-center px-4 py-2"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${isActive ? 'bg-red-100' : ''}`}>
