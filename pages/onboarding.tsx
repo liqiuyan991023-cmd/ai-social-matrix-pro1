@@ -15,8 +15,10 @@ export default function OnboardingPage() {
     ageRange: '',
     profession: '',
     interests: '',
-    contentPreference: '',
-    contentStyle: '',
+    contentPreference: [] as string[],
+    contentStyle: [] as string[],
+    customContentPreference: '',
+    customContentStyle: '',
     preferredLength: ''
   });
   
@@ -24,14 +26,24 @@ export default function OnboardingPage() {
     setIsLoading(true);
     try {
       // 处理数据格式
+      let contentPreferences = [...data.contentPreference];
+      if (data.customContentPreference) {
+        contentPreferences.push(data.customContentPreference);
+      }
+      
+      let contentStyles = [...data.contentStyle];
+      if (data.customContentStyle) {
+        contentStyles.push(data.customContentStyle);
+      }
+      
       const processedData = {
         userId,
         ageRange: data.ageRange,
         profession: data.profession,
         interests: data.interests.split(',').map((i: string) => i.trim()),
         expertise: data.interests.split(',').map((i: string) => i.trim()), // 使用兴趣作为专长
-        contentGoals: [data.contentPreference],
-        contentStyle: data.contentStyle,
+        contentGoals: contentPreferences,
+        contentStyle: contentStyles.join(', '),
         preferredLength: data.preferredLength
       };
       
@@ -74,7 +86,10 @@ export default function OnboardingPage() {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.ageRange && formData.profession && formData.interests && formData.contentPreference && formData.contentStyle && formData.preferredLength) {
+    const hasContentPreference = formData.contentPreference.length > 0 || formData.customContentPreference;
+    const hasContentStyle = formData.contentStyle.length > 0 || formData.customContentStyle;
+    
+    if (formData.ageRange && formData.profession && formData.interests && hasContentPreference && hasContentStyle && formData.preferredLength) {
       createProfile(formData);
     } else {
       alert('请填写所有必填项');
@@ -87,8 +102,10 @@ export default function OnboardingPage() {
       ageRange: '',
       profession: '',
       interests: '',
-      contentPreference: '',
-      contentStyle: '',
+      contentPreference: [],
+      contentStyle: [],
+      customContentPreference: '',
+      customContentStyle: '',
       preferredLength: ''
     });
     // 清除 SWR 缓存
@@ -151,63 +168,141 @@ export default function OnboardingPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-800 mb-3">4. 创作内容偏好 *</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <label className="block text-sm font-medium text-gray-800 mb-3">4. 创作内容偏好 * (可多选)</label>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '生活分享' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentPreference: '生活分享' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('生活分享') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentPreference = [...formData.contentPreference];
+                          if (newContentPreference.includes('生活分享')) {
+                            newContentPreference = newContentPreference.filter(item => item !== '生活分享');
+                          } else {
+                            newContentPreference.push('生活分享');
+                          }
+                          setFormData({ ...formData, contentPreference: newContentPreference });
+                        }}
                       >
                         生活分享
                       </div>
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '专业干货' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentPreference: '专业干货' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('专业干货') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentPreference = [...formData.contentPreference];
+                          if (newContentPreference.includes('专业干货')) {
+                            newContentPreference = newContentPreference.filter(item => item !== '专业干货');
+                          } else {
+                            newContentPreference.push('专业干货');
+                          }
+                          setFormData({ ...formData, contentPreference: newContentPreference });
+                        }}
                       >
                         专业干货
                       </div>
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '兴趣爱好' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentPreference: '兴趣爱好' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('兴趣爱好') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentPreference = [...formData.contentPreference];
+                          if (newContentPreference.includes('兴趣爱好')) {
+                            newContentPreference = newContentPreference.filter(item => item !== '兴趣爱好');
+                          } else {
+                            newContentPreference.push('兴趣爱好');
+                          }
+                          setFormData({ ...formData, contentPreference: newContentPreference });
+                        }}
                       >
                         兴趣爱好
                       </div>
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference === '职场经验' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentPreference: '职场经验' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('职场经验') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentPreference = [...formData.contentPreference];
+                          if (newContentPreference.includes('职场经验')) {
+                            newContentPreference = newContentPreference.filter(item => item !== '职场经验');
+                          } else {
+                            newContentPreference.push('职场经验');
+                          }
+                          setFormData({ ...formData, contentPreference: newContentPreference });
+                        }}
                       >
                         职场经验
                       </div>
                     </div>
+                    <input
+                      type="text"
+                      placeholder="其他内容偏好（可选）"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      value={formData.customContentPreference}
+                      onChange={(e) => setFormData({ ...formData, customContentPreference: e.target.value })}
+                    />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-800 mb-3">5. 表达风格 *</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <label className="block text-sm font-medium text-gray-800 mb-3">5. 表达风格 * (可多选)</label>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '亲切自然' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentStyle: '亲切自然' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('亲切自然') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentStyle = [...formData.contentStyle];
+                          if (newContentStyle.includes('亲切自然')) {
+                            newContentStyle = newContentStyle.filter(item => item !== '亲切自然');
+                          } else {
+                            newContentStyle.push('亲切自然');
+                          }
+                          setFormData({ ...formData, contentStyle: newContentStyle });
+                        }}
                       >
                         亲切自然
                       </div>
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '专业细致' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentStyle: '专业细致' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('专业细致') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentStyle = [...formData.contentStyle];
+                          if (newContentStyle.includes('专业细致')) {
+                            newContentStyle = newContentStyle.filter(item => item !== '专业细致');
+                          } else {
+                            newContentStyle.push('专业细致');
+                          }
+                          setFormData({ ...formData, contentStyle: newContentStyle });
+                        }}
                       >
                         专业细致
                       </div>
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '幽默风趣' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentStyle: '幽默风趣' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('幽默风趣') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentStyle = [...formData.contentStyle];
+                          if (newContentStyle.includes('幽默风趣')) {
+                            newContentStyle = newContentStyle.filter(item => item !== '幽默风趣');
+                          } else {
+                            newContentStyle.push('幽默风趣');
+                          }
+                          setFormData({ ...formData, contentStyle: newContentStyle });
+                        }}
                       >
                         幽默风趣
                       </div>
                       <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle === '情感共鸣' ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
-                        onClick={() => setFormData({ ...formData, contentStyle: '情感共鸣' })}
+                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('情感共鸣') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                        onClick={() => {
+                          let newContentStyle = [...formData.contentStyle];
+                          if (newContentStyle.includes('情感共鸣')) {
+                            newContentStyle = newContentStyle.filter(item => item !== '情感共鸣');
+                          } else {
+                            newContentStyle.push('情感共鸣');
+                          }
+                          setFormData({ ...formData, contentStyle: newContentStyle });
+                        }}
                       >
                         情感共鸣
                       </div>
                     </div>
+                    <input
+                      type="text"
+                      placeholder="其他表达风格（可选）"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      value={formData.customContentStyle}
+                      onChange={(e) => setFormData({ ...formData, customContentStyle: e.target.value })}
+                    />
                   </div>
                   
                   <div>
