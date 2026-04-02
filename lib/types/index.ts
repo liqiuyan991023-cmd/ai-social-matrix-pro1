@@ -34,6 +34,7 @@ export interface TopicRecommendation {
 
 export interface CreationRecord {
   id: string;
+  userId: string;
   title: string;
   content: string;
   keywords: {
@@ -43,6 +44,8 @@ export interface CreationRecord {
   };
   topic: TopicRecommendation;
   createdAt: number;
+  updatedAt: number;
+  feedback?: Feedback[];
 }
 
 export interface Feedback {
@@ -58,4 +61,17 @@ export interface Feedback {
   };
   applied: boolean;
   createdAt: number;
+}
+
+export interface HotTopic {
+  title: string;
+  tag: string;
+  heat: string;
+  url: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }

@@ -201,7 +201,7 @@ export default function CreatePage() {
                 ))}
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 mb-4">
                 <button 
                   onClick={handleCopy}
                   className="flex-1 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 shadow-sm shadow-red-200"
@@ -227,6 +227,28 @@ export default function CreatePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                   </svg>
                   保存到草稿
+                </button>
+              </div>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    // 接受该生成内容
+                    alert("内容已接受并保存！");
+                    router.push("/history");
+                  }}
+                  className="flex-1 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium flex items-center justify-center gap-2 shadow-sm shadow-green-200"
+                >
+                  <Check className="w-4 h-4" /> 接受该生成内容
+                </button>
+                <button 
+                  onClick={() => {
+                    // 还需继续修改
+                    setHasResult(false);
+                  }}
+                  className="flex-1 py-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" /> 还需继续修改
                 </button>
               </div>
             </div>

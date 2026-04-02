@@ -1,9 +1,10 @@
-import { UserProfile } from "../types";
+import { UserProfile, CreationRecord, Feedback } from "../types";
 import { callLongCatAPI } from "../api/longcat";
 import { redis } from "../db/redis";
 
 export class ContentGenerationService {
   private readonly CREATION_KEY = (creationId: string) => `creation:${creationId}`;
+  private readonly USER_CREATIONS_KEY = (userId: string) => `user:${userId}:creations`;
 
   async generateTitle(userProfile: UserProfile, topic: any, regenerate?: string): Promise<string[]> {
     const prompt = `基于以下信息为小红书笔记生成3个吸引人的标题：
@@ -88,42 +89,159 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
   "tags": ["关键词1", "关键词2"]
 }`;
 
-    const response = await callLongCatAPI(prompt);
-    return JSON.parse(response);
+    try {
+      const response = await callLongCatAPI(prompt);
+      return JSON.parse(response);
+    } catch (error) {
+      console.error('Error parsing keywords response:', error);
+      // 返回默认关键词
+      return {
+        topic: [topic.title, topic.category, "生活分享"],
+        search: [title, topic.title, `${topic.title} ${topic.category}`],
+        tags: [topic.title, topic.category, "生活方式"]
+      };
+    }
   }
 
-  async saveCreation(userId: string, creation: any): Promise<string> {
+  async saveCreation(userId: string, creation: Partial<CreationRecord>): Promise<string> {
     const creationId = `creation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const fullCreation = {
+    const fullCreation: CreationRecord = {
       id: creationId,
       userId,
-      ...creation,
+      title: creation.title || "未命名",
+      content: creation.content || "",
+      keywords: creation.keywords || {
+        topic: [],
+        search: [],
+        tags: []
+      },
+      topic: creation.topic || {
+        id: "default_topic",
+        title: "默认主题",
+        category: "生活方式",
+        difficulty: "easy",
+        trendingScore: 50,
+        matchScore: 50,
+        estimatedEngagement: 50,
+        contentAngle: "默认角度",
+        similarAccounts: []
+      },
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      feedback: creation.feedback
     };
 
-    await redis.set(this.CREATION_KEY(creationId), JSON.stringify(fullCreation));
-    await redis.lpush(`user:${userId}:creations`, creationId);
+    try {
+      await redis.set(this.CREATION_KEY(creationId), JSON.stringify(fullCreation));
+      await redis.lpush(this.USER_CREATIONS_KEY(userId), creationId);
+    } catch (error) {
+      console.error('Error saving creation to Redis:', error);
+      // Redis 不可用时，继续执行，不影响用户体验
+    }
 
     return creationId;
   }
 
-  async getCreation(creationId: string): Promise<any | null> {
-    const data = await redis.get(this.CREATION_KEY(creationId));
-    return typeof data === 'string' ? JSON.parse(data) : null;
+  async getCreation(creationId: string): Promise<CreationRecord | null> {
+    try {
+      const data = await redis.get(this.CREATION_KEY(creationId));
+      return typeof data === 'string' ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error getting creation from Redis:', error);
+      return null;
+    }
   }
 
-  async getUserCreations(userId: string, limit: number = 20): Promise<any[]> {
-    const creationIds = await redis.lrange(`user:${userId}:creations`, 0, limit - 1);
-    const creations = [];
+  async getUserCreations(userId: string, limit: number = 20): Promise<CreationRecord[]> {
+    try {
+      const creationIds = await redis.lrange(this.USER_CREATIONS_KEY(userId), 0, limit - 1);
+      const creations: CreationRecord[] = [];
 
-    for (const id of creationIds) {
-      const creation = await this.getCreation(id);
-      if (creation) {
-        creations.push(creation);
+      for (const id of creationIds) {
+        const creation = await this.getCreation(id);
+        if (creation) {
+          creations.push(creation);
+        }
       }
+
+      return creations;
+    } catch (error) {
+      console.error('Error getting user creations:', error);
+      return [];
+    }
+  }
+
+  async updateCreation(creationId: string, updates: Partial<CreationRecord>): Promise<CreationRecord | null> {
+    try {
+      const creation = await this.getCreation(creationId);
+      if (!creation) return null;
+
+      const updatedCreation = {
+        ...creation,
+        ...updates,
+        updatedAt: Date.now()
+      };
+
+      await redis.set(this.CREATION_KEY(creationId), JSON.stringify(updatedCreation));
+      return updatedCreation;
+    } catch (error) {
+      console.error('Error updating creation:', error);
+      return null;
+    }
+  }
+
+  async addFeedback(creationId: string, feedback: Feedback): Promise<CreationRecord | null> {
+    try {
+      const creation = await this.getCreation(creationId);
+      if (!creation) return null;
+
+      const updatedCreation = {
+        ...creation,
+        feedback: [...(creation.feedback || []), feedback],
+        updatedAt: Date.now()
+      };
+
+      await redis.set(this.CREATION_KEY(creationId), JSON.stringify(updatedCreation));
+      return updatedCreation;
+    } catch (error) {
+      console.error('Error adding feedback:', error);
+      return null;
+    }
+  }
+
+  async generateSummary(creations: CreationRecord[]): Promise<string> {
+    if (creations.length === 0) {
+      return "您还没有创作记录，开始创作吧！";
     }
 
-    return creations;
+    const creationTexts = creations.map(c => c.content).join('\n\n');
+    const creationTitles = creations.map(c => c.title).join('\n');
+    const creationCategories = [...new Set(creations.map(c => c.topic.category))].join(', ');
+
+    const prompt = `基于以下用户的创作历史，生成一份AI创作总结：
+
+创作标题：
+${creationTitles}
+
+创作内容：
+${creationTexts}
+
+创作分类：
+${creationCategories}
+
+要求：
+1. 分析用户的创作风格和特点
+2. 指出用户的创作优势
+3. 提供具体的改进建议
+4. 内容要专业、有针对性
+5. 语言要自然、友好
+6. 适合小红书平台的创作者`;
+
+    try {
+      return await callLongCatAPI(prompt);
+    } catch (error) {
+      console.error('Error generating summary:', error);
+      return "AI 创作总结生成失败，请稍后再试。";
+    }
   }
 }

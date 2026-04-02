@@ -4,6 +4,7 @@ import { callLongCatAPI } from "../api/longcat";
 
 export class UserProfileService {
   private readonly PROFILE_KEY = (userId: string) => `user:${userId}:profile`;
+  private readonly USER_KEY = (userId: string) => `user:${userId}`;
 
   async createProfile(data: Omit<UserProfile, "createdAt" | "updatedAt" | "creativePersona">): Promise<UserProfile> {
     const profile: UserProfile = {
@@ -14,6 +15,11 @@ export class UserProfileService {
     
     try {
       await redis.set(this.PROFILE_KEY(data.userId), JSON.stringify(profile));
+      // 同时存储用户基本信息
+      await redis.set(this.USER_KEY(data.userId), JSON.stringify({
+        userId: data.userId,
+        createdAt: Date.now()
+      }));
     } catch (error) {
       console.error("Failed to store profile in Redis:", error);
       // Redis 不可用时，继续执行，不影响用户注册流程
@@ -52,6 +58,12 @@ export class UserProfileService {
       console.error("Failed to update profile in Redis:", error);
       // Redis 不可用时，继续执行，返回更新后的 profile
     }
+    
+    // 如果更新了影响创作人格的字段，重新生成创作人格
+    if (updates.ageRange || updates.profession || updates.interests || updates.expertise || updates.contentGoals || updates.contentStyle) {
+      this.generateCreativePersona(userId).catch(console.error);
+    }
+    
     return updatedProfile;
   }
 
@@ -90,6 +102,37 @@ export class UserProfileService {
         contentStrengths: ["实用性强", "内容具体", "情感共鸣"]
       };
       await this.updateProfile(userId, { creativePersona: defaultPersona });
+    }
+  }
+
+  async deleteProfile(userId: string): Promise<boolean> {
+    try {
+      await redis.del(this.PROFILE_KEY(userId));
+      await redis.del(this.USER_KEY(userId));
+      return true;
+    } catch (error) {
+      console.error("Failed to delete profile from Redis:", error);
+      return false;
+    }
+  }
+
+  async exists(userId: string): Promise<boolean> {
+    try {
+      const data = await redis.get(this.USER_KEY(userId));
+      return typeof data === 'string';
+    } catch (error) {
+      console.error("Failed to check user existence:", error);
+      return false;
+    }
+  }
+
+  async getAllUsers(limit: number = 100): Promise<string[]> {
+    try {
+      const keys = await redis.keys("user:*:profile");
+      return keys.map(key => key.split(":")[1]).slice(0, limit);
+    } catch (error) {
+      console.error("Failed to get all users:", error);
+      return [];
     }
   }
 }
