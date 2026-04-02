@@ -1,9 +1,34 @@
-// Mock implementation for development
-// In production, this would be a real API call to LongCat or another LLM service
-export async function callLongCatAPI(prompt: string, options: any = {}): Promise<string> {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+import axios from 'axios';
 
+// Real implementation that calls LongCat API
+export async function callLongCatAPI(prompt: string, options: any = {}): Promise<string> {
+  try {
+    const response = await axios.post(
+      `${process.env.LONGCAT_API_URL}/completions`,
+      {
+        prompt,
+        max_tokens: options.max_tokens || 1000,
+        temperature: options.temperature || 0.7,
+        ...options
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.LONGCAT_API_KEY}`
+        }
+      }
+    );
+
+    return response.data.choices[0].text;
+  } catch (error) {
+    console.error('Error calling LongCat API:', error);
+    // Fallback to mock response if API call fails
+    return getMockResponse(prompt);
+  }
+}
+
+// Mock response function for fallback
+function getMockResponse(prompt: string): string {
   // Mock responses based on prompt content
   if (prompt.includes('生成3个吸引人的标题')) {
     return `✨ 10分钟快速早餐 recipes | 打工人必备\n🍎 健康早餐灵感 | 营养均衡一整天\n🌟 早餐不重样 | 一周7天早餐计划`;

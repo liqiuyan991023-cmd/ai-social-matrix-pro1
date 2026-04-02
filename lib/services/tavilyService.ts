@@ -8,9 +8,8 @@ export class TavilyService {
   private cacheExpiry: number; // 缓存过期时间（毫秒）
 
   constructor() {
-    // 这里应该从环境变量中获取API密钥
     this.apiKey = process.env.TAVILY_API_KEY || 'YOUR_TAVILY_API_KEY';
-    this.baseUrl = 'https://api.tavily.com/search';
+    this.baseUrl = process.env.TAVILY_API_URL || 'https://api.tavily.com';
     this.cache = new Map();
     this.cacheExpiry = 30 * 60 * 1000; // 30分钟缓存
   }
@@ -31,7 +30,7 @@ export class TavilyService {
     }
 
     try {
-      const response = await axios.get(this.baseUrl, {
+      const response = await axios.get(`${this.baseUrl}/search`, {
         params: {
           api_key: this.apiKey,
           query,
