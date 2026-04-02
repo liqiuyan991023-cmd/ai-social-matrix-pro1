@@ -25,7 +25,7 @@ export default function BottomNav() {
     {
       label: '历史',
       icon: History,
-      path: '/dashboard'
+      path: '/history'
     }
   ];
 

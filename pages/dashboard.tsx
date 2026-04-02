@@ -10,6 +10,9 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [creations, setCreations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hotTopicsIndex, setHotTopicsIndex] = useState(0);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
   useEffect(() => {
     // 检查是否有 userId 存储
@@ -23,6 +26,55 @@ export default function DashboardPage() {
     // 获取用户的创作历史
     fetchCreations(storedUserId);
   }, [router]);
+
+  const hotTopics = [
+    [
+      { title: "2024极简桌面改造指南", tag: "数码", heat: "98k", url: "https://www.xiaohongshu.com/search_result?keyword=2024%E6%9E%81%E7%AE%80%E6%A1%8C%E9%9D%A2%E6%94%B9%E9%80%A0%E6%8C%87%E5%8D%97" },
+      { title: "早起10分钟的微习惯改变人生", tag: "个人成长", heat: "85k", url: "https://www.xiaohongshu.com/search_result?keyword=%E6%97%A9%E8%B5%B010%E5%88%86%E9%92%9F%E7%9A%84%E5%BE%AE%E4%B9%A0%E6%83%AF%E6%94%B9%E5%8F%98%E4%BA%BA%E7%94%9F" },
+      { title: "这绝对是被严重低估的宝藏APP", tag: "效率工具", heat: "120k", url: "https://www.xiaohongshu.com/search_result?keyword=%E8%B4%AD%E8%97%8FAPP" }
+    ],
+    [
+      { title: "2024年最值得入手的数码产品", tag: "数码", heat: "156k", url: "https://www.xiaohongshu.com/search_result?keyword=2024%E5%B9%B4%E6%9C%80%E5%80%BC%E5%BE%97%E5%85%A5%E6%89%8B%E7%9A%84%E6%95%B0%E7%A0%81%E4%BA%A7%E5%93%81" },
+      { title: "办公室必备的5个解压神器", tag: "职场", heat: "78k", url: "https://www.xiaohongshu.com/search_result?keyword=%E5%8A%9E%E5%85%AC%E5%AE%A4%E5%BF%85%E5%A4%87%E7%9A%845%E4%B8%AA%E8%A7%A3%E5%8E%8B%E7%A5%9E%E5%99%A8" },
+      { title: "一周不重样的快手早餐", tag: "美食", heat: "92k", url: "https://www.xiaohongshu.com/search_result?keyword=%E4%B8%80%E5%91%A8%E4%B8%8D%E9%87%8D%E6%A0%B7%E7%9A%84%E5%BF%AB%E6%89%8B%E6%97%A9%E9%A4%90" }
+    ],
+    [
+      { title: "极简主义生活方式指南", tag: "生活方式", heat: "110k", url: "https://www.xiaohongshu.com/search_result?keyword=%E6%9E%81%E7%AE%80%E4%B8%BB%E4%B9%89%E7%94%9F%E6%B4%BB%E6%96%B9%E5%BC%8F%E6%8C%87%E5%8D%97" },
+      { title: "2024年流行的家居装饰趋势", tag: "家居", heat: "89k", url: "https://www.xiaohongshu.com/search_result?keyword=2024%E5%B9%B4%E6%B5%81%E8%A1%8C%E7%9A%84%E5%AE%B6%E5%B1%85%E8%A3%85%E9%A5%B0%E8%B6%8B%E5%8A%BF" },
+      { title: "高效时间管理的5个技巧", tag: "效率", heat: "135k", url: "https://www.xiaohongshu.com/search_result?keyword=%E9%AB%98%E6%95%88%E6%97%B6%E9%97%B4%E7%AE%A1%E7%90%86%E7%9A%845%E4%B8%AA%E6%8A%80%E5%B7%A7" }
+    ]
+  ];
+
+  const handleRefreshHotTopics = () => {
+    setHotTopicsIndex((prevIndex) => (prevIndex + 1) % hotTopics.length);
+  };
+
+  const generateAiSummary = async (creations: any[]) => {
+    setIsGeneratingSummary(true);
+    try {
+      // 这里应该调用 API 生成 AI 创作总结
+      // 由于我们没有实现这个 API，暂时使用模拟数据
+      // 模拟 API 调用延迟
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 基于创作内容生成总结
+      // 这里模拟大语言模型的处理逻辑
+      const summaries = [
+        '根据你最近 3 篇笔记的分析，你的"情绪化表达"数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。',
+        '分析了你的近期创作，发现你在"生活分享"领域表现突出，尤其是关于职场和生活方式的内容。建议尝试结合热点话题，提高内容的传播度。',
+        '你的创作风格偏向"亲切自然"，这种风格在小红书平台非常受欢迎。建议在内容中增加更多个人故事和真实体验，进一步增强与读者的连接。'
+      ];
+      
+      // 随机选择一个总结
+      const randomSummary = summaries[Math.floor(Math.random() * summaries.length)];
+      setAiSummary(randomSummary);
+    } catch (error) {
+      console.error('Error generating AI summary:', error);
+      setAiSummary('AI 创作总结生成失败，请稍后再试。');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
 
   const fetchCreations = async (userId: string) => {
     try {
@@ -79,6 +131,8 @@ export default function DashboardPage() {
       ];
       
       setCreations(mockCreations);
+      // 生成 AI 创作总结
+      await generateAiSummary(mockCreations);
     } catch (error) {
       console.error('Error fetching creations:', error);
     } finally {
@@ -99,7 +153,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      <TopBar title="RedSpark 红笔" showIcon={true} />
+      <TopBar title="RedSpark" showIcon={true} />
       
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Greeting */}
@@ -133,16 +187,12 @@ export default function DashboardPage() {
               <TrendingUp className="w-5 h-5 text-orange-500" />
               <h3 className="font-semibold text-base">近期爆款灵感</h3>
             </div>
-            <span className="text-xs text-gray-600 cursor-pointer">换一批</span>
+            <span className="text-xs text-gray-600 cursor-pointer hover:text-red-500 transition-colors" onClick={handleRefreshHotTopics}>换一批</span>
           </div>
           
           <div className="space-y-3">
-            {[
-              { title: "2024极简桌面改造指南", tag: "数码", heat: "98k" },
-              { title: "早起10分钟的微习惯改变人生", tag: "个人成长", heat: "85k" },
-              { title: "这绝对是被严重低估的宝藏APP", tag: "效率工具", heat: "120k" }
-            ].map((item, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center justify-between hover:border-red-300 transition-colors cursor-pointer" onClick={() => router.push('/create')}>
+            {hotTopics[hotTopicsIndex].map((item, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center justify-between hover:border-red-300 transition-colors cursor-pointer" onClick={() => window.open(item.url, '_blank')}>
                 <div className="space-y-1">
                   <h4 className="font-medium text-sm text-gray-800">{item.title}</h4>
                   <div className="flex items-center gap-2">
@@ -164,9 +214,16 @@ export default function DashboardPage() {
             <Sparkles className="w-5 h-5 text-purple-500" />
             <h3 className="font-semibold text-base">AI 创作总结</h3>
           </div>
-          <div className="bg-pink-50 border border-pink-100 rounded-xl p-4 text-sm text-gray-700 leading-relaxed">
-            根据你最近 3 篇笔记的分析，你的**“情绪化表达”**数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。
-          </div>
+          {isGeneratingSummary ? (
+            <div className="bg-pink-50 border border-pink-100 rounded-xl p-4 flex items-center justify-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mr-3"></div>
+              <span className="text-sm text-gray-700">AI 正在分析你的创作...</span>
+            </div>
+          ) : (
+            <div className="bg-pink-50 border border-pink-100 rounded-xl p-4 text-sm text-gray-700 leading-relaxed">
+              {aiSummary || "根据你最近 3 篇笔记的分析，你的**“情绪化表达”**数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。"}
+            </div>
+          )}
         </div>
 
         {/* Creation History */}

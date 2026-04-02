@@ -7,8 +7,10 @@ import BottomNav from "../components/BottomNav";
 export default function CreatePage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
   const [idea, setIdea] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [hasResult, setHasResult] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -21,14 +23,52 @@ export default function CreatePage() {
       return;
     }
     setUserId(storedUserId);
+    fetchUserProfile(storedUserId);
   }, [router]);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      setIsLoadingProfile(true);
+      const response = await fetch(`/api/user/profile?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserProfile(data.profile);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!idea.trim()) return;
     setIsGenerating(true);
     
-    // 模拟 API 调用
-    setTimeout(() => {
+    try {
+      // 构建包含人设信息的 prompt
+      let prompt = `基于以下创作者人设，为小红书平台生成一篇关于"${idea}"的笔记：\n`;
+      
+      if (userProfile) {
+        prompt += `\n创作者人设：\n`;
+        prompt += `年龄范围：${userProfile.ageRange}\n`;
+        prompt += `职业：${userProfile.profession}\n`;
+        prompt += `兴趣：${userProfile.interests.join('、')}\n`;
+        prompt += `创作风格：${userProfile.contentStyle}\n`;
+        prompt += `内容长度偏好：${userProfile.preferredLength === 'short' ? '短篇（300-500字）' : userProfile.preferredLength === 'medium' ? '中篇（500-800字）' : '长篇（800-1200字）'}\n`;
+      }
+      
+      prompt += `\n要求：\n`;
+      prompt += `1. 符合小红书平台的内容风格和格式\n`;
+      prompt += `2. 语言生动有趣，有个人特色\n`;
+      prompt += `3. 包含相关的话题标签\n`;
+      prompt += `4. 内容结构清晰，有吸引力\n`;
+      
+      console.log('生成内容的 prompt:', prompt);
+      
+      // 模拟 API 调用
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       // 模拟生成的内容
       const mockContent = `这绝对是打工人必备的桌面好物！😭
 
@@ -46,8 +86,12 @@ export default function CreatePage() {
       setGeneratedContent(mockContent);
       setKeywords(mockKeywords);
       setHasResult(true);
+    } catch (error) {
+      console.error('Error generating content:', error);
+      alert('内容生成失败，请重试');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleCopy = () => {
@@ -56,7 +100,7 @@ export default function CreatePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!userId) {
+  if (!userId || isLoadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -97,6 +141,17 @@ export default function CreatePage() {
                 ) : '一键生成笔记'}
               </button>
             </div>
+            
+            {userProfile && (
+              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                <h3 className="font-semibold text-sm text-gray-700 mb-2">当前创作人格</h3>
+                <div className="text-xs text-gray-600 space-y-1">
+                  <p>风格：{userProfile.contentStyle}</p>
+                  <p>内容偏好：{userProfile.contentGoals?.[0] || '生活分享'}</p>
+                  <p>长度偏好：{userProfile.preferredLength === 'short' ? '短篇' : userProfile.preferredLength === 'medium' ? '中篇' : '长篇'}</p>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
