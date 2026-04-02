@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const feedbackService = new FeedbackService();
-      const result = await feedbackService.processFeedback(feedbackData);
+      const result = await feedbackService.createFeedback(feedbackData);
 
       res.status(200).json({ success: true, feedback: result });
     } catch (error) {
@@ -33,9 +33,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const feedbackService = new FeedbackService();
-      const feedbacks = await feedbackService.getUserFeedback(userId);
+      const stats = await feedbackService.getFeedbackStats(userId);
 
-      res.status(200).json({ feedbacks });
+      res.status(200).json({ stats });
     } catch (error) {
       console.error("Error getting feedbacks:", error);
       res.status(500).json({ error: "Internal server error" });

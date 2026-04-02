@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { PenSquare, Copy, Check, Sparkles, MessageSquarePlus, ArrowLeft, Loader2, User } from 'lucide-react';
+import { PenSquare, Copy, Check, Sparkles, MessageSquarePlus, ArrowLeft, Loader2, User, RefreshCw } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import { ContentGenerationService } from "../lib/services/contentGenerationService";
