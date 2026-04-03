@@ -209,7 +209,7 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
     }
   }
 
-  async generateSummary(creations: CreationRecord[]): Promise<string> {
+  async generateSummary(creations: CreationRecord[], userProfile?: UserProfile, feedbacks?: any[]): Promise<string> {
     if (creations.length === 0) {
       return "您还没有创作记录，开始创作吧！";
     }
@@ -218,7 +218,28 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
     const creationTitles = creations.map(c => c.title).join('\n');
     const creationCategories = [...new Set(creations.map(c => c.topic.category))].join(', ');
 
-    const prompt = `基于以下用户的创作历史，生成一份AI创作总结：
+    // 计算时间范围
+    const timeRange = creations.length > 0
+      ? `${new Date(creations[creations.length - 1].createdAt).toLocaleDateString('zh-CN')} - ${new Date(creations[0].createdAt).toLocaleDateString('zh-CN')}`
+      : '暂无创作历史';
+
+    // 构建反馈信息
+    const feedbackInfo = feedbacks && feedbacks.length > 0
+      ? `用户反馈信息：\n${feedbacks.map(f => `- ${f.customFeedback || f.presetFeedback}`).join('\n')}`
+      : '暂无用户反馈';
+
+    const prompt = `基于以下用户的创作历史和反馈，生成一份AI创作总结：
+
+创作时间范围：
+${timeRange}
+
+用户创作人设：
+- 年龄：${userProfile?.ageRange || '未知'}
+- 职业：${userProfile?.profession || '未知'}
+- 兴趣：${userProfile?.interests?.join('、') || '未知'}
+- 表达风格：${userProfile?.contentStyle || '亲切自然'}
+- 主要创作领域：${userProfile?.contentGoals?.join('、') || '生活分享'}
+- 内容长度偏好：${userProfile?.preferredLength || '中篇'}
 
 创作标题：
 ${creationTitles}
@@ -229,13 +250,17 @@ ${creationTexts}
 创作分类：
 ${creationCategories}
 
+${feedbackInfo}
+
 要求：
 1. 分析用户的创作风格和特点
 2. 指出用户的创作优势
-3. 提供具体的改进建议
-4. 内容要专业、有针对性
-5. 语言要自然、友好
-6. 适合小红书平台的创作者`;
+3. 基于用户反馈提供具体的改进建议
+4. 结合用户的创作人设信息进行个性化分析
+5. 内容要专业、有针对性
+6. 语言要自然、友好
+7. 适合小红书平台的创作者
+8. 提供可执行的优化建议`;
 
     try {
       return await callLongCatAPI(prompt);

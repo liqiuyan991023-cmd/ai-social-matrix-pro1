@@ -334,70 +334,9 @@ export default function HistoryPage() {
   const generateAiSummary = async (creations: any[], feedbacks: any[] = []) => {
     setIsGeneratingSummary(true);
     try {
-      // 基于创作内容生成总结
-      const creationTexts = creations.map(c => c.content).join('\n\n');
-      const creationTitles = creations.map(c => c.title).join('\n');
-
-      // 获取时间范围
-      const timeRange = creations.length > 0
-        ? `${new Date(creations[creations.length - 1].createdAt).toLocaleDateString('zh-CN')} - ${new Date(creations[0].createdAt).toLocaleDateString('zh-CN')}`
-        : '暂无创作历史';
-
-      // 构建反馈信息
-      const feedbackInfo = feedbacks.length > 0
-        ? `用户反馈信息：\n${feedbacks.map(f => `- ${f.customFeedback || f.presetFeedback}`).join('\n')}`
-        : '暂无用户反馈';
-
-      const prompt = `基于以下用户的创作历史和反馈，生成一份AI创作总结：
-
-创作时间范围：
-${timeRange}
-
-创作标题：
-${creationTitles}
-
-创作内容：
-${creationTexts}
-
-${feedbackInfo}
-
-用户创作风格分析：
-- 用户偏好${userProfile?.contentStyle || '亲切自然'}的表达风格
-- 主要创作领域：${userProfile?.contentGoals?.join('、') || '生活分享'}
-- 内容长度偏好：${userProfile?.preferredLength || '中篇'}
-
-要求：
-1. 分析用户的创作风格和特点
-2. 指出用户的创作优势
-3. 基于用户反馈提供具体的改进建议
-4. 内容要专业、有针对性
-5. 语言要自然、友好
-6. 适合小红书平台的创作者
-7. 结合用户的创作人设信息进行个性化分析
-8. 提供可执行的优化建议`;
-
-      // 调用大语言模型API
-      const response = await fetch('/api/content/summary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAiSummary(data.summary);
-      } else {
-        // 如果API调用失败，使用默认总结
-        const summaries = [
-          '根据你最近 3 篇笔记的分析，你的"情绪化表达"数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。',
-          '分析了你的近期创作，发现你在"生活分享"领域表现突出，尤其是关于职场和生活方式的内容。建议尝试结合热点话题，提高内容的传播度。',
-          '你的创作风格偏向"亲切自然"，这种风格在小红书平台非常受欢迎。建议在内容中增加更多个人故事和真实体验，进一步增强与读者的连接。'
-        ];
-        const randomSummary = summaries[Math.floor(Math.random() * summaries.length)];
-        setAiSummary(randomSummary);
-      }
+      // 使用服务生成总结
+      const summary = await contentService.generateSummary(creations, userProfile, feedbacks);
+      setAiSummary(summary);
     } catch (error) {
       console.error('Error generating AI summary:', error);
       setAiSummary('AI 创作总结生成失败，请稍后再试。');
