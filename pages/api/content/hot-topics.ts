@@ -2,22 +2,18 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { TavilyService } from '../../../lib/services/tavilyService';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     const tavilyService = new TavilyService();
-    const topics = await tavilyService.getHotTopics('小红书热门话题', '生活方式');
-
+    const hotTopics = await tavilyService.getHotTopics('小红书热门话题');
+    
     res.status(200).json({
       success: true,
-      data: topics
+      data: hotTopics
     });
   } catch (error) {
     console.error('Error fetching hot topics:', error);
-
-    // Return default topics on error
+    
+    // 返回默认热点话题
     const defaultTopics = [
       {
         title: "2025春季穿搭趋势",
@@ -38,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         url: "https://www.xiaohongshu.com/search_result?keyword=周末短途旅行"
       }
     ];
-
+    
     res.status(200).json({
       success: true,
       data: defaultTopics
