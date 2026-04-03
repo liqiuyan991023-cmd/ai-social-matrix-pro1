@@ -265,13 +265,60 @@ export default function HistoryPage() {
     }
   };
 
-  // 更新generateAiSummary函数以包含反馈信息
+  // 更新generateAiSummary函数以包含反馈信息和时间筛选
   const generateAiSummary = async (creations: any[], feedbacks: any[] = []) => {
     setIsGeneratingSummary(true);
     try {
-      // 使用服务生成总结
-      const summary = await contentService.generateSummary(creations);
-      setAiSummary(summary);
+      // 过滤创作记录根据时间范围
+      const now = Date.now();
+      const timeRangeMs = {
+        '一天内': 24 * 60 * 60 * 1000,
+        '一周内': 7 * 24 * 60 * 60 * 1000,
+        '两周内': 14 * 24 * 60 * 60 * 1000,
+        '一个月': 30 * 24 * 60 * 60 * 1000
+      };
+
+      const filteredCreations = creations.filter(creation => {
+        return (now - creation.createdAt) <= timeRangeMs[selectedTimeRange as keyof typeof timeRangeMs];
+      });
+
+      if (filteredCreations.length === 0) {
+        setAiSummary('暂无创作记录，开始创作吧！');
+        return;
+      }
+
+      // 构建提示词
+      const prompt = `请基于以下创作历史和反馈信息，生成一个详细的创作总结分析：
+
+创作历史（${selectedTimeRange}）：
+${filteredCreations.map(c => `- ${c.title} (${c.topic?.category || '生活方式'})`).join('\n')}
+
+反馈信息：
+${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFeedback}`).join('\n') : '暂无反馈'}
+
+用户要求：${userRequirements || '无特定要求'}
+
+请从以下方面进行分析：
+1. 创作主题偏好和趋势
+2. 内容质量和用户反馈
+3. 创作频率和活跃度
+4. 改进建议和下一步计划
+
+请用友好的语气输出总结，包含具体数据和建议。`;
+
+      // 调用summary API
+      const response = await fetch('/api/content/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate summary');
+      }
+
+      const data = await response.json();
+      setAiSummary(data.summary);
     } catch (error) {
       console.error('Error generating AI summary:', error);
       setAiSummary('AI 创作总结生成失败，请稍后再试。');
@@ -298,12 +345,55 @@ export default function HistoryPage() {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* AI Growth Summary */}
         <div className="animate-fade-in">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-9 h-9 bg-gradient-purple rounded-full flex items-center justify-center shadow-soft-md">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 bg-gradient-purple rounded-full flex items-center justify-center shadow-soft-md">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-semibold text-base">AI 创作总结</h3>
             </div>
-            <h3 className="font-semibold text-base">AI 创作总结</h3>
+            <button
+              onClick={() => setShowSummaryOptions(!showSummaryOptions)}
+              className="text-xs text-gray-600 hover:text-primary transition-colors"
+            >
+              设置
+            </button>
           </div>
+          {showSummaryOptions && (
+            <div className="mb-4 p-4 bg-white rounded-xl border border-gray-200 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">时间范围</label>
+                <select
+                  value={selectedTimeRange}
+                  onChange={(e) => setSelectedTimeRange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="一天内">一天内</option>
+                  <option value="一周内">一周内</option>
+                  <option value="两周内">两周内</option>
+                  <option value="一个月">一个月</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">分析要求（可选）</label>
+                <textarea
+                  value={userRequirements}
+                  onChange={(e) => setUserRequirements(e.target.value)}
+                  placeholder="例如：重点分析我的标题创作技巧"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                  rows={2}
+                />
+              </div>
+              <button
+                onClick={() => generateAiSummary(creations)}
+                disabled={isGeneratingSummary}
+                className="w-full bg-gradient-primary text-white py-2 rounded-lg hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                {isGeneratingSummary ? '生成中...' : '重新生成总结'}
+              </button>
+            </div>
+          )}
+
           {isGeneratingSummary ? (
             <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-6 flex items-center justify-center">
               <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500 mr-3"></div>
@@ -314,7 +404,7 @@ export default function HistoryPage() {
             </div>
           ) : (
             <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-700 leading-relaxed hover:shadow-soft-md transition-shadow duration-300">
-              {aiSummary || "根据你最近 3 篇笔记的分析，你的**“情绪化表达”**数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。"}
+              {aiSummary || "暂无创作记录，开始创作吧！"}
             </div>
           )}
         </div>

@@ -85,15 +85,15 @@ export default function CreatePage() {
 
       // 生成标题
       const titles = await contentService.generateTitle(userProfile, currentTopic);
-      const selectedTitle = titles[0];
-      
-      // 生成内容
-      const content = await contentService.generateContent(userProfile, selectedTopic, selectedTitle);
-      
+      const selectedTitle = titles?.[0] || `${currentTopic.title} 灵感`;
+
+      // 生成内容（使用 currentTopic 以避免 stale state）
+      const content = await contentService.generateContent(userProfile, currentTopic, selectedTitle);
+
       // 生成关键词
-      const keywordsData = await contentService.generateKeywords(userProfile, selectedTopic, selectedTitle, content);
-      const tags = keywordsData.tags || [];
-      
+      const keywordsData = await contentService.generateKeywords(userProfile, currentTopic, selectedTitle, content);
+      const tags = keywordsData?.tags || [];
+
       setGeneratedContent(content);
       setKeywords(tags);
       setHasResult(true);

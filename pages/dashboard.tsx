@@ -3,16 +3,12 @@ import { useRouter } from 'next/router';
 import { Sparkles, TrendingUp, ChevronRight, Zap, Target, Home, User, PenSquare, History, Loader2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
-import { TavilyService } from '../lib/services/tavilyService';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [hotTopics, setHotTopics] = useState<any[]>([]);
   const [isLoadingHotTopics, setIsLoadingHotTopics] = useState(false);
-
-  // 创建TavilyService实例
-  const tavilyService = new TavilyService();
 
   useEffect(() => {
     // 检查是否有 userId 存储
@@ -30,10 +26,13 @@ export default function DashboardPage() {
   const fetchHotTopics = async () => {
     setIsLoadingHotTopics(true);
     try {
-      // 从Tavily API获取小红书热门话题
-      // 使用category参数指定小红书相关内容
-      const topics = await tavilyService.getHotTopics('小红书热门话题', '生活方式');
-      setHotTopics(topics);
+      // 使用新的API端点获取热点话题
+      const response = await fetch('/api/content/hot-topics');
+      if (!response.ok) {
+        throw new Error('Failed to fetch hot topics');
+      }
+      const result = await response.json();
+      setHotTopics(result.data);
     } catch (error) {
       console.error('Error fetching hot topics:', error);
       // API调用失败时设置一些默认的热门话题
