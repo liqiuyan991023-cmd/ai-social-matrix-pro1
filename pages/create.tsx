@@ -253,7 +253,7 @@ export default function CreatePage() {
                         createdAt: Date.now(),
                       };
 
-                      // 保存到localStorage作为临时存储
+                      // 保存到localStorage
                       const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
                       existingCreations.push(creationData);
                       localStorage.setItem('userCreations', JSON.stringify(existingCreations));
@@ -269,28 +269,18 @@ export default function CreatePage() {
                         }),
                       });
 
-                      // 即使API保存失败，也要保存到localStorage
-                      const creationData = {
-                        userId: userId!,
-                        title: idea,
-                        content: generatedContent,
-                        keywords: { tags: keywords },
-                        topic: selectedTopic,
-                        createdAt: Date.now(),
-                      };
-                      const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
-                      existingCreations.push(creationData);
-                      localStorage.setItem('userCreations', JSON.stringify(existingCreations));
-
                       if (response.ok) {
                         alert("内容已接受并保存！");
                         router.push("/history");
                       } else {
-                        throw new Error('保存失败');
+                        // API保存失败，但localStorage保存成功，仍然提示成功
+                        alert("内容已保存到本地！");
+                        router.push("/history");
                       }
                     } catch (error) {
                       console.error('Error saving creation:', error);
-                      alert("保存失败，请重试");
+                      // 即使出错，localStorage可能已经保存成功
+                      alert("内容生成成功，但保存遇到问题，请重试");
                     }
                   }}
                   className="flex-1 py-3.5 bg-gradient-success text-white rounded-xl hover:shadow-soft-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
