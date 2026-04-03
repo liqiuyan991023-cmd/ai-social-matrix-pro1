@@ -38,6 +38,9 @@ export default function HistoryPage() {
   const [aiSummary, setAiSummary] = useState<string>('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedTimeRange, setSelectedTimeRange] = useState<string>('一周内');
+  const [userRequirements, setUserRequirements] = useState<string>('');
+  const [showSummaryOptions, setShowSummaryOptions] = useState<boolean>(false);
 
   // 创建服务实例
   const contentService = new ContentGenerationService();
@@ -68,7 +71,6 @@ export default function HistoryPage() {
     const userCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
     if (userCreations.length > 0) {
       setCreations(userCreations);
-      generateAiSummary(userCreations);
     } else {
       // 如果没有本地数据，获取用户的创作历史
       fetchCreations(storedUserId);
@@ -96,60 +98,9 @@ export default function HistoryPage() {
         setCreations(userCreations);
         await generateAiSummary(userCreations);
       } else {
-        // 如果都没有，检查localStorage中是否有旧数据
-        const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
-        if (existingCreations.length > 0) {
-          setCreations(existingCreations);
-          await generateAiSummary(existingCreations);
-        } else {
-          // 使用模拟数据作为最后选择
-          const mockCreations = [
-            {
-              id: 'creation_1',
-              title: '打工人的救命神器分享',
-              content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
-              topic: {
-                category: '生活方式'
-              },
-              keywords: {
-                tags: ['打工人', '桌面改造', '好物分享']
-              },
-              createdAt: Date.now() - 86400000, // 1天前
-              likes: 128,
-              views: 1200
-            },
-            {
-              id: 'creation_2',
-              title: '极简穿搭：周五下班直接去约会',
-              content: '谁懂啊！这种一衣多穿的快乐。今天这套Look真是闭眼穿都好看...',
-              topic: {
-                category: '时尚'
-              },
-              keywords: {
-                tags: ['极简穿搭', '职场穿搭', '约会穿搭']
-              },
-              createdAt: Date.now() - 172800000, // 2天前
-              likes: 450,
-              views: 3500
-            },
-            {
-              id: 'creation_3',
-              title: '探店 | 这家藏在巷子里的咖啡馆',
-              content: '终于被我挖到了！人少安静，咖啡好喝，超级适合带电脑来办公...',
-              topic: {
-                category: '探店'
-              },
-              keywords: {
-                tags: ['咖啡馆', '探店', '办公好去处']
-              },
-              createdAt: Date.now() - 259200000, // 3天前
-              likes: 65,
-              views: 800
-            }
-          ];
-          setCreations(mockCreations);
-          await generateAiSummary(mockCreations);
-        }
+        // 如果都没有数据，不显示创作历史，也不生成总结
+        setCreations([]);
+        setAiSummary('暂无创作记录，开始创作吧！');
       }
     } catch (error) {
       console.error('Error fetching creations:', error);
@@ -159,25 +110,9 @@ export default function HistoryPage() {
         setCreations(localCreations);
         await generateAiSummary(localCreations);
       } else {
-        // 使用模拟数据
-        const mockCreations = [
-          {
-            id: 'creation_1',
-            title: '打工人的救命神器分享',
-            content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
-            topic: {
-              category: '生活方式'
-            },
-            keywords: {
-              tags: ['打工人', '桌面改造', '好物分享']
-            },
-            createdAt: Date.now() - 86400000, // 1天前
-            likes: 128,
-            views: 1200
-          }
-        ];
-        setCreations(mockCreations);
-        await generateAiSummary(mockCreations);
+        // 没有数据时显示空状态
+        setCreations([]);
+        setAiSummary('暂无创作记录，开始创作吧！');
       }
     } finally {
       setIsLoading(false);
@@ -335,7 +270,7 @@ export default function HistoryPage() {
     setIsGeneratingSummary(true);
     try {
       // 使用服务生成总结
-      const summary = await contentService.generateSummary(creations, userProfile, feedbacks);
+      const summary = await contentService.generateSummary(creations);
       setAiSummary(summary);
     } catch (error) {
       console.error('Error generating AI summary:', error);

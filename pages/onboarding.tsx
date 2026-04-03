@@ -84,13 +84,13 @@ export default function OnboardingPage() {
     }
   );
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasContentPreference = formData.contentPreference.length > 0 || formData.customContentPreference;
     const hasContentStyle = formData.contentStyle.length > 0 || formData.customContentStyle;
-    
+
     if (formData.ageRange && formData.profession && formData.interests && hasContentPreference && hasContentStyle && formData.preferredLength) {
-      createProfile(formData);
+      await createProfile(formData);
     } else {
       alert('请填写所有必填项');
     }

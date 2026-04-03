@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hotTopics, setHotTopics] = useState<any[]>([]);
   const [isLoadingHotTopics, setIsLoadingHotTopics] = useState(false);
-  
+
   // 创建TavilyService实例
   const tavilyService = new TavilyService();
 
@@ -24,21 +24,48 @@ export default function DashboardPage() {
     }
     setUserId(storedUserId);
 
-    // 获取热点话题
+    // 获取热点话题 - 使用正确的分类参数
     fetchHotTopics();
   }, [router]);
 
   const fetchHotTopics = async () => {
     setIsLoadingHotTopics(true);
     try {
-      // 从Tavily API获取热点话题
-      const topics = await tavilyService.getHotTopics();
+      // 从Tavily API获取小红书热门话题
+      // 使用category参数指定小红书相关内容
+      const topics = await tavilyService.getHotTopics('小红书热门话题', '生活方式');
       setHotTopics(topics);
     } catch (error) {
       console.error('Error fetching hot topics:', error);
+      // API调用失败时设置一些默认的热门话题
+      setHotTopics(getDefaultHotTopics());
     } finally {
       setIsLoadingHotTopics(false);
     }
+  };
+
+  // 默认热点话题（当API调用失败时使用）
+  const getDefaultHotTopics = () => {
+    return [
+      {
+        title: "2025春季穿搭趋势",
+        tag: "时尚",
+        heat: "95k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=2025春季穿搭"
+      },
+      {
+        title: "办公室养生小妙招",
+        tag: "职场",
+        heat: "82k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=办公室养生"
+      },
+      {
+        title: "周末短途旅行推荐",
+        tag: "旅行",
+        heat: "135k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=周末短途旅行"
+      }
+    ];
   };
 
   const handleRefreshHotTopics = () => {
