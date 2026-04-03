@@ -51,31 +51,40 @@ export default function CreatePage() {
   const handleGenerate = async () => {
     if (!idea.trim()) return;
     setIsGenerating(true);
-    
+
     try {
+      // 确保有用户profile
+      if (!userProfile) {
+        throw new Error('用户信息加载失败，请刷新页面重试');
+      }
+
       // 生成或获取主题
-      if (!selectedTopic && userProfile) {
+      let currentTopic = selectedTopic;
+      if (!currentTopic) {
         // 基于用户输入的想法生成主题
-        const topics = await topicService.generateRecommendations(userProfile);
-        if (topics && topics.length > 0) {
-          setSelectedTopic(topics[0]);
-        } else {
-          // 如果没有生成主题，使用默认主题
-          setSelectedTopic({
+        try {
+          const topics = await topicService.generateRecommendations(userProfile);
+          if (topics && topics.length > 0) {
+            currentTopic = topics[0];
+          }
+        } catch (topicError) {
+          console.error('Error generating topics:', topicError);
+        }
+
+        // 如果没有生成主题，使用默认主题
+        if (!currentTopic) {
+          currentTopic = {
             id: 'default_topic',
             title: idea,
             contentAngle: `关于${idea}的分享`,
             category: '生活方式'
-          });
+          };
         }
+        setSelectedTopic(currentTopic);
       }
-      
-      if (!userProfile || !selectedTopic) {
-        throw new Error('缺少必要的用户信息或主题');
-      }
-      
+
       // 生成标题
-      const titles = await contentService.generateTitle(userProfile, selectedTopic);
+      const titles = await contentService.generateTitle(userProfile, currentTopic);
       const selectedTitle = titles[0];
       
       // 生成内容
@@ -259,6 +268,19 @@ export default function CreatePage() {
                           regenerate: null
                         }),
                       });
+
+                      // 即使API保存失败，也要保存到localStorage
+                      const creationData = {
+                        userId: userId!,
+                        title: idea,
+                        content: generatedContent,
+                        keywords: { tags: keywords },
+                        topic: selectedTopic,
+                        createdAt: Date.now(),
+                      };
+                      const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+                      existingCreations.push(creationData);
+                      localStorage.setItem('userCreations', JSON.stringify(existingCreations));
 
                       if (response.ok) {
                         alert("内容已接受并保存！");

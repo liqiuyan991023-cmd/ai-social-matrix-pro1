@@ -8,7 +8,6 @@ import { TavilyService } from '../lib/services/tavilyService';
 export default function DashboardPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [hotTopics, setHotTopics] = useState<any[]>([]);
   const [isLoadingHotTopics, setIsLoadingHotTopics] = useState(false);
 
@@ -68,8 +67,19 @@ export default function DashboardPage() {
     ];
   };
 
-  const handleRefreshHotTopics = () => {
-    fetchHotTopics();
+  const handleRefreshHotTopics = async () => {
+    await fetchHotTopics();
+  };
+
+  // 处理话题点击
+  const handleTopicClick = (topic: any) => {
+    if (topic.url && topic.url.startsWith('http')) {
+      window.open(topic.url, '_blank', 'noopener,noreferrer');
+    } else {
+      // 如果URL无效，尝试生成一个小红书搜索链接
+      const searchKeyword = encodeURIComponent(topic.title);
+      window.open(`https://www.xiaohongshu.com/search_result?keyword=${searchKeyword}`, '_blank', 'noopener,noreferrer');
+    }
   };
 
   if (!userId) {
@@ -151,18 +161,22 @@ export default function DashboardPage() {
             ) : hotTopics.length > 0 ? (
               // 显示热点话题
               hotTopics.map((item, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 flex items-center justify-between hover:border-red-300 transition-colors cursor-pointer" onClick={() => window.open(item.url, '_blank')}>
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-sm text-gray-800">{item.title}</h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded-full font-normal">{item.tag}</span>
-                      <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
-                        <Zap className="w-3 h-3 text-orange-400" /> {item.heat} 热度
+                <button
+                  key={i}
+                  onClick={() => handleTopicClick(item)}
+                  className="w-full bg-white rounded-xl shadow-card border border-gray-200 p-4 flex items-center justify-between hover:shadow-card-hover hover:border-primary transition-all duration-300 text-left"
+                >
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm text-gray-800 hover:text-primary transition-colors">{item.title}</h4>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] px-2 py-1 bg-gray-100 text-gray-600 rounded-full font-medium">{item.tag || '热点'}</span>
+                      <span className="text-[11px] text-gray-600 flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-orange-500" /> {item.heat || '50k'} 热度
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
+                </button>
               ))
             ) : (
               // 无数据状态

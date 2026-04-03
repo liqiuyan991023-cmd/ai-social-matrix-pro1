@@ -60,8 +60,8 @@ export default function OnboardingPage() {
       const result = await response.json();
       // 存储 userId 到 localStorage
       localStorage.setItem('userId', userId);
-      // 不直接跳转到 dashboard，而是等待创作人格生成
-      // 创作人格会通过 SWR 轮询自动获取
+      // 成功创建后直接跳转到dashboard
+      router.push("/dashboard");
       return result;
     } catch (error) {
       console.error("Error creating profile:", error);
