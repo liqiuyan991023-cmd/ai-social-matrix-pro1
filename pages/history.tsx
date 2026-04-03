@@ -304,7 +304,9 @@ ${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFee
 3. 创作频率和活跃度
 4. 改进建议和下一步计划
 
-请用友好的语气输出总结，包含具体数据和建议。`;
+请用友好的语气输出总结，包含具体数据和建议。
+
+如果创作历史为空，请直接输出："暂无创作记录，开始创作吧！"并给出一些创作建议。`;
 
       // 调用summary API
       const response = await fetch('/api/content/summary', {

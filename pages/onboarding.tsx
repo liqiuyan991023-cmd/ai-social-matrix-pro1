@@ -91,6 +91,8 @@ export default function OnboardingPage() {
 
     if (formData.ageRange && formData.profession && formData.interests && hasContentPreference && hasContentStyle && formData.preferredLength) {
       await createProfile(formData);
+      // 创建成功后跳转到dashboard
+      router.push('/dashboard');
     } else {
       alert('请填写所有必填项');
     }

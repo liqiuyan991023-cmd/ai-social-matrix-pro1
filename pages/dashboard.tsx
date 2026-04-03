@@ -71,13 +71,25 @@ export default function DashboardPage() {
   };
 
   // 处理话题点击
-  const handleTopicClick = (topic: any) => {
-    if (topic.url && topic.url.startsWith('http')) {
-      window.open(topic.url, '_blank', 'noopener,noreferrer');
-    } else {
-      // 如果URL无效，尝试生成一个小红书搜索链接
-      const searchKeyword = encodeURIComponent(topic.title);
-      window.open(`https://www.xiaohongshu.com/search_result?keyword=${searchKeyword}`, '_blank', 'noopener,noreferrer');
+  const handleTopicClick = async (topic: any) => {
+    try {
+      // 更新点击统计
+      await fetch('/api/content/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'click', topicId: topic.id || topic.title })
+      });
+
+      // 打开链接
+      const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
+      if (url && url.startsWith('http')) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (error) {
+      console.error('Topic click error:', error);
+      // 即使统计失败，仍然尝试打开链接
+      const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -160,10 +172,10 @@ export default function DashboardPage() {
             ) : hotTopics.length > 0 ? (
               // 显示热点话题
               hotTopics.map((item, i) => (
-                <button
+                <div
                   key={i}
                   onClick={() => handleTopicClick(item)}
-                  className="w-full bg-white rounded-xl shadow-card border border-gray-200 p-4 flex items-center justify-between hover:shadow-card-hover hover:border-primary transition-all duration-300 text-left"
+                  className="w-full bg-white rounded-xl shadow-card border border-gray-200 p-4 flex items-center justify-between hover:shadow-card-hover hover:border-primary transition-all duration-300 cursor-pointer"
                 >
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm text-gray-800 hover:text-primary transition-colors">{item.title}</h4>
@@ -174,8 +186,8 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
-                </button>
+                  <ChevronRight className="w-5 h-5 text-gray-400 hover:text-primary transition-colors" />
+                </div>
               ))
             ) : (
               // 无数据状态

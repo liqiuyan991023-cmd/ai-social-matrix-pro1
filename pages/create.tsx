@@ -49,57 +49,89 @@ export default function CreatePage() {
   };
 
   const handleGenerate = async () => {
-    if (!idea.trim()) return;
+    if (!idea.trim()) {
+      alert('请输入创作想法');
+      return;
+    }
+
+    if (!userId) {
+      alert('用户信息加载失败，请刷新页面');
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
-      // 确保有用户profile
+      // 确保userProfile已加载
       if (!userProfile) {
-        throw new Error('用户信息加载失败，请刷新页面重试');
+        await fetchUserProfile(userId);
+        if (!userProfile) {
+          throw new Error('用户画像加载失败');
+        }
       }
 
-      // 生成或获取主题
-      let currentTopic = selectedTopic;
-      if (!currentTopic) {
-        // 基于用户输入的想法生成主题
-        try {
-          const topics = await topicService.generateRecommendations(userProfile);
-          if (topics && topics.length > 0) {
-            currentTopic = topics[0];
+      // 调用API生成内容
+      const response = await fetch('/api/content/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          topicId: 'default_topic'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('内容生成失败，请重试');
+      }
+
+      // 处理流式响应
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('无法读取响应数据');
+      }
+
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let generatedTitle = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+
+            try {
+              const stageData = JSON.parse(data);
+              if (stageData.stage === 'title') {
+                generatedTitle = stageData.content || '';
+              } else if (stageData.stage === 'content') {
+                fullContent = stageData.content || '';
+                setGeneratedContent(fullContent);
+              } else if (stageData.stage === 'keywords') {
+                setKeywords(stageData.content?.tags || []);
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE data:', e);
+            }
           }
-        } catch (topicError) {
-          console.error('Error generating topics:', topicError);
         }
-
-        // 如果没有生成主题，使用默认主题
-        if (!currentTopic) {
-          currentTopic = {
-            id: 'default_topic',
-            title: idea,
-            contentAngle: `关于${idea}的分享`,
-            category: '生活方式'
-          };
-        }
-        setSelectedTopic(currentTopic);
       }
 
-      // 生成标题
-      const titles = await contentService.generateTitle(userProfile, currentTopic);
-      const selectedTitle = titles?.[0] || `${currentTopic.title} 灵感`;
+      if (!fullContent) {
+        throw new Error('内容生成失败，请重试');
+      }
 
-      // 生成内容（使用 currentTopic 以避免 stale state）
-      const content = await contentService.generateContent(userProfile, currentTopic, selectedTitle);
-
-      // 生成关键词
-      const keywordsData = await contentService.generateKeywords(userProfile, currentTopic, selectedTitle, content);
-      const tags = keywordsData?.tags || [];
-
-      setGeneratedContent(content);
-      setKeywords(tags);
       setHasResult(true);
+
     } catch (error) {
-      console.error('Error generating content:', error);
-      alert('内容生成失败，请重试');
+      console.error('Content generation error:', error);
+      alert(error instanceof Error ? error.message : '内容生成失败，请检查网络连接或稍后重试');
     } finally {
       setIsGenerating(false);
     }
