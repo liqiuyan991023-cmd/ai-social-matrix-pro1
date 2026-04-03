@@ -35,23 +35,31 @@ export default function BottomNav() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-soft-lg z-50">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-around h-16">
           {navItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = currentPath === item.path;
-            
+
             return (
               <button
                 key={index}
                 onClick={() => handleNavClick(item.path)}
-                className="flex flex-col items-center justify-center px-4 py-2"
+                className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl transition-all duration-200 ${
+                  isActive ? 'bg-primary/10 -translate-y-0.5' : 'hover:bg-gray-100'
+                }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${isActive ? 'bg-red-100' : ''}`}>
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-red-500' : 'text-gray-500'}`} />
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center mb-1 transition-all duration-200 ${
+                  isActive ? 'bg-gradient-primary shadow-soft-md' : ''
+                }`}>
+                  <Icon className={`w-5 h-5 transition-colors duration-200 ${
+                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                  }`} />
                 </div>
-                <span className={`text-xs ${isActive ? 'text-red-500 font-medium' : 'text-gray-500'}`}>
+                <span className={`text-xs font-medium transition-colors duration-200 ${
+                  isActive ? 'text-primary' : 'text-gray-500'
+                }`}>
                   {item.label}
                 </span>
               </button>

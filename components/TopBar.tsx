@@ -21,19 +21,19 @@ export default function TopBar({ title, showIcon = false, showBackButton = false
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-4xl mx-auto px-4 h-12 flex items-center justify-between">
+    <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-soft-sm">
+      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {showBackButton && (
             <button
               onClick={handleBack}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all duration-200 hover:scale-105 active:scale-95"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-700" />
             </button>
           )}
           {showIcon && (
-            <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+            <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
           )}

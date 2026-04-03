@@ -5,16 +5,54 @@ import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
 import { ContentGenerationService } from '../lib/services/contentGenerationService';
 
+interface Creation {
+  id: string;
+  title: string;
+  content: string;
+  topic: {
+    category: string;
+    id?: string;
+  };
+  keywords: {
+    tags: string[];
+  };
+  createdAt: number;
+  likes?: number;
+  views?: number;
+}
+
+interface Feedback {
+  creationId: string;
+  userId: string;
+  feedbackType: 'preset' | 'custom';
+  presetFeedback: string | null;
+  customFeedback: string | null;
+  createdAt: number;
+}
+
 export default function HistoryPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [creations, setCreations] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [creations, setCreations] = useState<Creation[]>([]);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   // 创建服务实例
   const contentService = new ContentGenerationService();
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/user/profile?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserProfile(data.profile);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   useEffect(() => {
     // 检查是否有 userId 存储
@@ -24,20 +62,296 @@ export default function HistoryPage() {
       return;
     }
     setUserId(storedUserId);
+    fetchUserProfile(storedUserId);
 
-    // 获取用户的创作历史
-    fetchCreations(storedUserId);
+    // 从localStorage获取用户的创作历史
+    const userCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
+    if (userCreations.length > 0) {
+      setCreations(userCreations);
+      generateAiSummary(userCreations);
+    } else {
+      // 如果没有本地数据，获取用户的创作历史
+      fetchCreations(storedUserId);
+    }
   }, [router]);
 
-  const generateAiSummary = async (creations: any[]) => {
+
+  const fetchCreations = async (userId: string) => {
+    try {
+      setIsLoading(true);
+
+      // 优先从localStorage获取创作历史
+      const localCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+      if (localCreations.length > 0) {
+        setCreations(localCreations);
+        await generateAiSummary(localCreations);
+        setIsLoading(false);
+        return;
+      }
+
+      // 如果没有本地数据，从ContentGenerationService获取
+      const userCreations = await contentService.getUserCreations(userId);
+
+      if (userCreations.length > 0) {
+        setCreations(userCreations);
+        await generateAiSummary(userCreations);
+      } else {
+        // 如果都没有，检查localStorage中是否有旧数据
+        const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+        if (existingCreations.length > 0) {
+          setCreations(existingCreations);
+          await generateAiSummary(existingCreations);
+        } else {
+          // 使用模拟数据作为最后选择
+          const mockCreations = [
+            {
+              id: 'creation_1',
+              title: '打工人的救命神器分享',
+              content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
+              topic: {
+                category: '生活方式'
+              },
+              keywords: {
+                tags: ['打工人', '桌面改造', '好物分享']
+              },
+              createdAt: Date.now() - 86400000, // 1天前
+              likes: 128,
+              views: 1200
+            },
+            {
+              id: 'creation_2',
+              title: '极简穿搭：周五下班直接去约会',
+              content: '谁懂啊！这种一衣多穿的快乐。今天这套Look真是闭眼穿都好看...',
+              topic: {
+                category: '时尚'
+              },
+              keywords: {
+                tags: ['极简穿搭', '职场穿搭', '约会穿搭']
+              },
+              createdAt: Date.now() - 172800000, // 2天前
+              likes: 450,
+              views: 3500
+            },
+            {
+              id: 'creation_3',
+              title: '探店 | 这家藏在巷子里的咖啡馆',
+              content: '终于被我挖到了！人少安静，咖啡好喝，超级适合带电脑来办公...',
+              topic: {
+                category: '探店'
+              },
+              keywords: {
+                tags: ['咖啡馆', '探店', '办公好去处']
+              },
+              createdAt: Date.now() - 259200000, // 3天前
+              likes: 65,
+              views: 800
+            }
+          ];
+          setCreations(mockCreations);
+          await generateAiSummary(mockCreations);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching creations:', error);
+      // 发生错误时尝试从localStorage获取
+      const localCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+      if (localCreations.length > 0) {
+        setCreations(localCreations);
+        await generateAiSummary(localCreations);
+      } else {
+        // 使用模拟数据
+        const mockCreations = [
+          {
+            id: 'creation_1',
+            title: '打工人的救命神器分享',
+            content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
+            topic: {
+              category: '生活方式'
+            },
+            keywords: {
+              tags: ['打工人', '桌面改造', '好物分享']
+            },
+            createdAt: Date.now() - 86400000, // 1天前
+            likes: 128,
+            views: 1200
+          }
+        ];
+        setCreations(mockCreations);
+        await generateAiSummary(mockCreations);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreationClick = (creation: any) => {
+    // 跳转到创作内容界面
+    router.push(`/creation/${creation.id}`);
+  };
+
+  const handleFeedback = async (creation: Creation) => {
+    // 打开反馈对话框并收集反馈
+    const feedbackType = prompt('请选择反馈类型：\n1. 短一点\n2. 更干货点\n3. 加多点表情包\n4. 更像吐槽\n5. 自定义');
+
+    let feedbackContent = '';
+    switch (feedbackType) {
+      case '1':
+        feedbackContent = '短一点';
+        break;
+      case '2':
+        feedbackContent = '更干货点';
+        break;
+      case '3':
+        feedbackContent = '加多点表情包';
+        break;
+      case '4':
+        feedbackContent = '更像吐槽';
+        break;
+      case '5':
+        feedbackContent = prompt('请输入您的自定义反馈：') || '';
+        break;
+      default:
+        return;
+    }
+
+    try {
+      // 保存反馈到localStorage
+      const feedbackData: Feedback = {
+        creationId: creation.id,
+        userId: userId!,
+        feedbackType: feedbackType === '5' ? 'custom' : 'preset',
+        presetFeedback: feedbackType !== '5' ? feedbackContent : null,
+        customFeedback: feedbackType === '5' ? feedbackContent : null,
+        createdAt: Date.now(),
+      };
+
+      const existingFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]') as Feedback[];
+      existingFeedbacks.push(feedbackData);
+      localStorage.setItem('userFeedbacks', JSON.stringify(existingFeedbacks));
+
+      // 调用反馈API
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          alert('反馈已提交！AI创作总结将参考您的反馈进行优化。');
+
+          // 重新生成AI总结，包含反馈信息
+          await generateAiSummary(creations, existingFeedbacks);
+        } else {
+          throw new Error('反馈提交失败');
+        }
+      } else {
+        throw new Error('反馈提交失败');
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('反馈提交失败，请重试');
+    }
+  };
+
+  const handleOptimize = async (creation: Creation) => {
+    try {
+      // 获取该创作内容的反馈
+      const existingFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]') as Feedback[];
+      const creationFeedbacks = existingFeedbacks.filter((f: Feedback) => f.creationId === creation.id);
+
+      if (creationFeedbacks.length === 0) {
+        alert('暂无反馈信息，请先提供反馈后再优化');
+        return;
+      }
+
+      // 调用优化API
+      const response = await fetch('/api/content/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId!,
+          topicId: creation.topic?.id || 'default_topic',
+          regenerate: creationFeedbacks[creationFeedbacks.length - 1].customFeedback || creationFeedbacks[creationFeedbacks.length - 1].presetFeedback,
+        }),
+      });
+
+      if (response.ok) {
+        alert('优化版本已生成！');
+
+        // 读取优化后的内容
+        const reader = response.body?.getReader();
+        if (reader) {
+          const decoder = new TextDecoder();
+          let optimizedContent = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') break;
+
+                try {
+                  const stageData = JSON.parse(data);
+                  if (stageData.stage === 'content') {
+                    optimizedContent = stageData.content;
+                  }
+                } catch (e) {
+                  console.error('Failed to parse SSE data:', e);
+                }
+              }
+            }
+          }
+
+          // 更新创作历史中的内容
+          const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
+          const updatedCreations = existingCreations.map((c: Creation) =>
+            c.id === creation.id ? { ...c, content: optimizedContent } : c
+          );
+          localStorage.setItem('userCreations', JSON.stringify(updatedCreations));
+
+          // 刷新页面显示
+          setCreations(updatedCreations);
+          alert('内容已优化完成！');
+        }
+      } else {
+        throw new Error('优化失败');
+      }
+    } catch (error) {
+      console.error('Error optimizing creation:', error);
+      alert('优化失败，请重试');
+    }
+  };
+
+  // 更新generateAiSummary函数以包含反馈信息
+  const generateAiSummary = async (creations: any[], feedbacks: any[] = []) => {
     setIsGeneratingSummary(true);
     try {
       // 基于创作内容生成总结
-      // 构建prompt
       const creationTexts = creations.map(c => c.content).join('\n\n');
       const creationTitles = creations.map(c => c.title).join('\n');
-      
-      const prompt = `基于以下用户的创作历史，生成一份AI创作总结：
+
+      // 获取时间范围
+      const timeRange = creations.length > 0
+        ? `${new Date(creations[creations.length - 1].createdAt).toLocaleDateString('zh-CN')} - ${new Date(creations[0].createdAt).toLocaleDateString('zh-CN')}`
+        : '暂无创作历史';
+
+      // 构建反馈信息
+      const feedbackInfo = feedbacks.length > 0
+        ? `用户反馈信息：\n${feedbacks.map(f => `- ${f.customFeedback || f.presetFeedback}`).join('\n')}`
+        : '暂无用户反馈';
+
+      const prompt = `基于以下用户的创作历史和反馈，生成一份AI创作总结：
+
+创作时间范围：
+${timeRange}
 
 创作标题：
 ${creationTitles}
@@ -45,14 +359,23 @@ ${creationTitles}
 创作内容：
 ${creationTexts}
 
+${feedbackInfo}
+
+用户创作风格分析：
+- 用户偏好${userProfile?.contentStyle || '亲切自然'}的表达风格
+- 主要创作领域：${userProfile?.contentGoals?.join('、') || '生活分享'}
+- 内容长度偏好：${userProfile?.preferredLength || '中篇'}
+
 要求：
 1. 分析用户的创作风格和特点
 2. 指出用户的创作优势
-3. 提供具体的改进建议
+3. 基于用户反馈提供具体的改进建议
 4. 内容要专业、有针对性
 5. 语言要自然、友好
-6. 适合小红书平台的创作者`;
-      
+6. 适合小红书平台的创作者
+7. 结合用户的创作人设信息进行个性化分析
+8. 提供可执行的优化建议`;
+
       // 调用大语言模型API
       const response = await fetch('/api/content/summary', {
         method: 'POST',
@@ -61,7 +384,7 @@ ${creationTexts}
         },
         body: JSON.stringify({ prompt }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setAiSummary(data.summary);
@@ -83,107 +406,6 @@ ${creationTexts}
     }
   };
 
-  const fetchCreations = async (userId: string) => {
-    try {
-      // 从ContentGenerationService获取创作历史
-      setIsLoading(true);
-      const userCreations = await contentService.getUserCreations(userId);
-      
-      if (userCreations.length > 0) {
-        setCreations(userCreations);
-        // 生成 AI 创作总结
-        await generateAiSummary(userCreations);
-      } else {
-        // 如果没有创作历史，使用模拟数据
-        const mockCreations = [
-          {
-            id: 'creation_1',
-            title: '打工人的救命神器分享',
-            content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
-            topic: {
-              category: '生活方式'
-            },
-            keywords: {
-              tags: ['打工人', '桌面改造', '好物分享']
-            },
-            createdAt: Date.now() - 86400000, // 1天前
-            likes: 128,
-            views: 1200
-          },
-          {
-            id: 'creation_2',
-            title: '极简穿搭：周五下班直接去约会',
-            content: '谁懂啊！这种一衣多穿的快乐。今天这套Look真是闭眼穿都好看...',
-            topic: {
-              category: '时尚'
-            },
-            keywords: {
-              tags: ['极简穿搭', '职场穿搭', '约会穿搭']
-            },
-            createdAt: Date.now() - 172800000, // 2天前
-            likes: 450,
-            views: 3500
-          },
-          {
-            id: 'creation_3',
-            title: '探店 | 这家藏在巷子里的咖啡馆',
-            content: '终于被我挖到了！人少安静，咖啡好喝，超级适合带电脑来办公...',
-            topic: {
-              category: '探店'
-            },
-            keywords: {
-              tags: ['咖啡馆', '探店', '办公好去处']
-            },
-            createdAt: Date.now() - 259200000, // 3天前
-            likes: 65,
-            views: 800
-          }
-        ];
-        setCreations(mockCreations);
-        // 生成 AI 创作总结
-        await generateAiSummary(mockCreations);
-      }
-    } catch (error) {
-      console.error('Error fetching creations:', error);
-      // 发生错误时使用模拟数据
-      const mockCreations = [
-        {
-          id: 'creation_1',
-          title: '打工人的救命神器分享',
-          content: '这绝对是打工人必备的桌面好物！平时天天对着电脑，颈椎真的受不了...',
-          topic: {
-            category: '生活方式'
-          },
-          keywords: {
-            tags: ['打工人', '桌面改造', '好物分享']
-          },
-          createdAt: Date.now() - 86400000, // 1天前
-          likes: 128,
-          views: 1200
-        }
-      ];
-      setCreations(mockCreations);
-      await generateAiSummary(mockCreations);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreationClick = (creation: any) => {
-    // 跳转到创作内容界面
-    router.push(`/creation/${creation.id}`);
-  };
-
-  const handleFeedback = (creation: any) => {
-    // 打开反馈对话框
-    alert('反馈功能开发中，敬请期待！');
-  };
-
-  const handleOptimize = (creation: any) => {
-    // 打开优化对话框
-    alert('优化功能开发中，敬请期待！');
-  };
-
   if (!userId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -196,76 +418,92 @@ ${creationTexts}
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <TopBar title="创作历史" showIcon={false} />
-      
+
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* AI Growth Summary */}
-        <div>
+        <div className="animate-fade-in">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-purple-500" />
+            <div className="w-9 h-9 bg-gradient-purple rounded-full flex items-center justify-center shadow-soft-md">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
             <h3 className="font-semibold text-base">AI 创作总结</h3>
           </div>
           {isGeneratingSummary ? (
-            <div className="bg-pink-50 border border-pink-100 rounded-xl p-4 flex items-center justify-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mr-3"></div>
-              <span className="text-sm text-gray-700">AI 正在分析你的创作...</span>
+            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-6 flex items-center justify-center">
+              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500 mr-3"></div>
+              <div>
+                <span className="text-sm font-medium text-gray-700">AI 正在分析你的创作...</span>
+                <p className="text-xs text-gray-500 mt-1">这可能需要几分钟时间</p>
+              </div>
             </div>
           ) : (
-            <div className="bg-pink-50 border border-pink-100 rounded-xl p-4 text-sm text-gray-700 leading-relaxed">
+            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-700 leading-relaxed hover:shadow-soft-md transition-shadow duration-300">
               {aiSummary || "根据你最近 3 篇笔记的分析，你的**“情绪化表达”**数据较好。建议接下来继续保持这种拉近距离的语调，同时可以在末尾增加互动式提问，引导更多评论。"}
             </div>
           )}
         </div>
 
         {/* Creation History */}
-        <div>
+        <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <HistoryIcon className="w-5 h-5 text-red-500" />
+              <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
+                <HistoryIcon className="w-4 h-4 text-white" />
+              </div>
               <h3 className="font-semibold text-lg">创作历史</h3>
             </div>
+            <span className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-full">
+              共 {creations.length} 篇
+            </span>
           </div>
           <div className="space-y-4">
-            {creations.map(creation => (
-              <div 
-                key={creation.id} 
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:border-red-300 transition-colors hover:shadow-md"
+            {creations.map((creation, index) => (
+              <div
+                key={creation.id}
+                className="bg-white rounded-2xl shadow-card border border-gray-200 p-5 hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 hover:border-primary"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-800 flex-1 cursor-pointer" onClick={() => handleCreationClick(creation)}>{creation.title}</h3>
-                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-semibold text-gray-800 flex-1 cursor-pointer hover:text-primary transition-colors" onClick={() => handleCreationClick(creation)}>{creation.title}</h3>
+                  <span className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-full ml-2">
                     {creation.topic?.category || '生活方式'}
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2 cursor-pointer" onClick={() => handleCreationClick(creation)}>
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2 cursor-pointer hover:text-gray-700 transition-colors" onClick={() => handleCreationClick(creation)}>
                   {creation.content}
                 </p>
 
                 <div className="flex flex-wrap gap-2 mb-3">
                   {creation.keywords?.tags?.slice(0, 3).map((tag: string, index: number) => (
-                    <span key={index} className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded-full">
+                    <span key={index} className="text-xs px-3 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 text-rose-600 rounded-full hover:shadow-soft-sm transition-all duration-200">
                       #{tag}
                     </span>
                   ))}
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                  <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit' })}</span>
+                  <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                  {creation.likes && (
+                    <span className="flex items-center gap-1">
+                      <span className="text-red-500">❤️</span> {creation.likes}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleFeedback(creation)}
-                    className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors flex items-center justify-center gap-1 text-xs"
+                    className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-accent hover:text-accent font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
                   >
                     <MessageSquare className="w-3 h-3" />
                     反馈
                   </button>
                   <button
                     onClick={() => handleOptimize(creation)}
-                    className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors flex items-center justify-center gap-1 text-xs"
+                    className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-purple-500 hover:text-purple-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
                   >
                     <RefreshCw className="w-3 h-3" />
                     优化

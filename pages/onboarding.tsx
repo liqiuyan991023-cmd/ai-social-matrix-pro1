@@ -113,27 +113,27 @@ export default function OnboardingPage() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <TopBar title="人设诊断" showIcon={false} />
-      
+
       <div className="max-w-4xl mx-auto px-4 py-6">
         {!personaData?.profile ? (
           <div className="space-y-8">
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                <User className="w-10 h-10 text-red-500" />
+            <div className="flex flex-col items-center justify-center py-8 animate-fade-in">
+              <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-soft-lg animate-pulse-soft">
+                <User className="w-11 h-11 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">挖掘你的专属人设</h2>
               <p className="text-sm text-gray-600 text-center">回答几个问题，AI 为你定制小红书文风与选材方向。</p>
             </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+
+            <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+              <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 hover:shadow-card-hover transition-shadow duration-300">
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">1. 年龄范围 *</label>
                     <select
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       value={formData.ageRange}
                       onChange={(e) => setFormData({ ...formData, ageRange: e.target.value })}
                     >
@@ -150,18 +150,18 @@ export default function OnboardingPage() {
                     <input
                       type="text"
                       placeholder="例如：互联网打工人、大二学生、新手宝妈"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       value={formData.profession}
                       onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">3. 平时关注的内容 *</label>
                     <input
                       type="text"
                       placeholder="例如：极简穿搭、探店、数码测评"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       value={formData.interests}
                       onChange={(e) => setFormData({ ...formData, interests: e.target.value })}
                     />
@@ -170,8 +170,13 @@ export default function OnboardingPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-3">4. 创作内容偏好 * (可多选)</label>
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('生活分享') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentPreference.includes('生活分享')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentPreference = [...formData.contentPreference];
                           if (newContentPreference.includes('生活分享')) {
@@ -183,9 +188,14 @@ export default function OnboardingPage() {
                         }}
                       >
                         生活分享
-                      </div>
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('专业干货') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentPreference.includes('专业干货')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentPreference = [...formData.contentPreference];
                           if (newContentPreference.includes('专业干货')) {
@@ -197,9 +207,14 @@ export default function OnboardingPage() {
                         }}
                       >
                         专业干货
-                      </div>
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('兴趣爱好') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentPreference.includes('兴趣爱好')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentPreference = [...formData.contentPreference];
                           if (newContentPreference.includes('兴趣爱好')) {
@@ -211,9 +226,14 @@ export default function OnboardingPage() {
                         }}
                       >
                         兴趣爱好
-                      </div>
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentPreference.includes('职场经验') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentPreference.includes('职场经验')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentPreference = [...formData.contentPreference];
                           if (newContentPreference.includes('职场经验')) {
@@ -225,12 +245,12 @@ export default function OnboardingPage() {
                         }}
                       >
                         职场经验
-                      </div>
+                      </button>
                     </div>
                     <input
                       type="text"
                       placeholder="其他内容偏好（可选）"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       value={formData.customContentPreference}
                       onChange={(e) => setFormData({ ...formData, customContentPreference: e.target.value })}
                     />
@@ -239,8 +259,13 @@ export default function OnboardingPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-3">5. 表达风格 * (可多选)</label>
                     <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('亲切自然') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentStyle.includes('亲切自然')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentStyle = [...formData.contentStyle];
                           if (newContentStyle.includes('亲切自然')) {
@@ -252,9 +277,14 @@ export default function OnboardingPage() {
                         }}
                       >
                         亲切自然
-                      </div>
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('专业细致') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentStyle.includes('专业细致')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentStyle = [...formData.contentStyle];
                           if (newContentStyle.includes('专业细致')) {
@@ -266,9 +296,14 @@ export default function OnboardingPage() {
                         }}
                       >
                         专业细致
-                      </div>
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('幽默风趣') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentStyle.includes('幽默风趣')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentStyle = [...formData.contentStyle];
                           if (newContentStyle.includes('幽默风趣')) {
@@ -280,9 +315,14 @@ export default function OnboardingPage() {
                         }}
                       >
                         幽默风趣
-                      </div>
-                      <div
-                        className={`px-4 py-3 border rounded-lg text-center cursor-pointer ${formData.contentStyle.includes('情感共鸣') ? 'border-red-500 bg-red-50 text-red-500' : 'border-gray-300 hover:border-red-300 hover:bg-red-50'}`}
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-4 py-3 border-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
+                          formData.contentStyle.includes('情感共鸣')
+                            ? 'border-primary bg-primary/10 text-primary shadow-soft-sm'
+                            : 'border-gray-200 hover:border-primary hover:bg-primary/5'
+                        }`}
                         onClick={() => {
                           let newContentStyle = [...formData.contentStyle];
                           if (newContentStyle.includes('情感共鸣')) {
@@ -294,21 +334,21 @@ export default function OnboardingPage() {
                         }}
                       >
                         情感共鸣
-                      </div>
+                      </button>
                     </div>
                     <input
                       type="text"
                       placeholder="其他表达风格（可选）"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       value={formData.customContentStyle}
                       onChange={(e) => setFormData({ ...formData, customContentStyle: e.target.value })}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">6. 内容长度 *</label>
                     <select
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary transition-all duration-200"
                       value={formData.preferredLength}
                       onChange={(e) => setFormData({ ...formData, preferredLength: e.target.value })}
                     >
@@ -324,7 +364,7 @@ export default function OnboardingPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-red-500 text-white py-4 rounded-lg hover:bg-red-600 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-gradient-primary text-white py-4 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 {isLoading ? "生成中..." : "生成专属人设"}
               </button>
@@ -342,36 +382,36 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-green-800">人设创建成功！</h3>
-                  <p className="text-sm text-green-700 mt-1">你已经成功创建了专属的创作人格，开始你的创作之旅吧！</p>
-                </div>
+                <h3 className="font-semibold text-green-800">您的人物画像已生成√</h3>
               </div>
+              <p className="text-sm text-green-700 mt-2">下方可标注重新设置的字样</p>
             </div>
-            
-            <PersonaDisplay 
-              persona={personaData.profile.creativePersona}
-              onEdit={() => setShowConfirmDialog(true)}
-            />
-            
-            <div className="space-y-3">
+
+            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <PersonaDisplay
+                persona={personaData.profile.creativePersona}
+                onEdit={() => setShowConfirmDialog(true)}
+              />
+            </div>
+
+            <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
               <button
                 onClick={() => router.push("/dashboard")}
-                className="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 font-medium transition-colors"
+                className="w-full bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 开始创作
               </button>
-              
+
               <button
                 onClick={() => setShowConfirmDialog(true)}
-                className="w-full border border-red-500 text-red-500 py-3 rounded-lg hover:bg-red-50 font-medium transition-colors"
+                className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
               >
                 重新创建人设
               </button>
