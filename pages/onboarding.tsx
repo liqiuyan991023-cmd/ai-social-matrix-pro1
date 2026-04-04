@@ -63,12 +63,13 @@ export default function OnboardingPage() {
       localStorage.setItem('userId', userId);
       // 存储用户画像到localStorage
       localStorage.setItem(`userProfile_${userId}`, JSON.stringify(result.profile));
+      
+      // 调用AI生成创作人格总结，并等待完成
+      await generateCreativePersona(result.profile);
+      
       // 设置成功状态并停止加载
       setProfileCreated(true);
       setIsLoading(false);
-
-      // 调用AI生成创作人格总结
-      await generateCreativePersona(result.profile);
       
       // 手动刷新persona数据
       mutatePersona();
@@ -83,7 +84,7 @@ export default function OnboardingPage() {
   };
 
   // 生成创作人格总结
-  const generateCreativePersona = async (profile: any) => {
+  const generateCreativePersona = async (profile: any): Promise<void> => {
     try {
       const prompt = `基于以下用户信息生成一个详细的创作人格画像：
 
@@ -114,15 +115,29 @@ export default function OnboardingPage() {
         const data = await response.json();
         // 保存创作人格到localStorage
         const creativePersona = {
-          ...profile,
-          personaSummary: data.summary,
+          userId: userId,
+          personality: data.summary || '基于你的特点，我为你打造了专属创作风格',
           generatedAt: new Date().toISOString()
         };
         localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(creativePersona));
+      } else {
+        // 如果API调用失败，仍然保存默认的创作人格
+        const defaultPersona = {
+          userId: userId,
+          personality: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。你的优势在于${profile.interests.split(',')[0] || '生活经验丰富'}，建议重点关注${profile.contentGoals.join('/')}{${profile.contentStyle}的表达方式，这样最容易引起目标受众的共鸣。`,
+          generatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(defaultPersona));
       }
     } catch (error) {
       console.error('Error generating creative persona:', error);
-      // 即使生成失败，也不影响整体流程
+      // 即使生成失败，也保存默认的创作人格，避免数据缺失
+      const defaultPersona = {
+        userId: userId,
+        personality: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。建议重点关注内容质量和用户互动，这是小红书平台成功的关键。`,
+        generatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(defaultPersona));
     }
   };
   
@@ -161,8 +176,9 @@ export default function OnboardingPage() {
       customContentStyle: '',
       preferredLength: ''
     });
-    // 清除 SWR 缓存
+    // 清除 SWR 缓存和localStorage中的创作人格数据
     mutate(`/api/user/profile?userId=${userId}`, null);
+    localStorage.removeItem(`creativePersona_${userId}`);
     setProfileCreated(false);
   };
 
@@ -170,13 +186,24 @@ export default function OnboardingPage() {
     handleRecreate();
     setShowConfirmDialog(false);
   };
+
+  // 检查是否创作人格已生成
+  const isCreativePersonaGenerated = () => {
+    if (!userId) return false;
+    try {
+      const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+      return !!savedPersona;
+    } catch {
+      return false;
+    }
+  };
   
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <TopBar title="人设诊断" showIcon={false} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {!personaData?.profile && !profileCreated ? (
+        {!profileCreated && !personaData?.profile ? (
           <div className="space-y-8">
             <div className="flex flex-col items-center justify-center py-8 animate-fade-in">
               <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-soft-lg animate-pulse-soft">
@@ -429,7 +456,42 @@ export default function OnboardingPage() {
               </button>
             </form>
           </div>
-        ) : personaLoading || (profileCreated && !personaData?.profile) ? (
+        ) : profileCreated && (isCreativePersonaGenerated() || personaData?.profile) ? (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
+                  <CheckCircle2 className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-semibold text-green-800">你的人设画像设置成功！</h3>
+              </div>
+              <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新设置人设画像</p>
+            </div>
+
+            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <PersonaDisplay
+                persona={personaData?.profile?.creativePersona || {}}
+                onEdit={() => setShowConfirmDialog(true)}
+              />
+            </div>
+
+            <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="w-full bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+              >
+                开始创作
+              </button>
+
+              <button
+                onClick={handleResetPersona}
+                className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
+              >
+                重新设置人设画像
+              </button>
+            </div>
+          </div>
+        ) : personaLoading || (profileCreated && !isCreativePersonaGenerated()) ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
               <Sparkles className="w-8 h-8 text-white" />

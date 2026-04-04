@@ -4,18 +4,35 @@ import { TavilyService } from '../../../lib/services/tavilyService';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const tavilyService = new TavilyService();
-    // 使用分类来获取多样化的热点话题
+    
+    // 首先尝试从Tavily API获取热点话题
     const categories = ['数码', '个人成长', '效率工具', '职场', '美食', '生活方式', '家居', '效率'];
     let allTopics: any[] = [];
+    let successCount = 0;
 
     // 从多个分类获取热点话题
     for (const category of categories) {
       try {
         const topics = await tavilyService.getHotTopics('2026年热门话题 趋势 新品 穿搭 科技 生活方式 小红书', category);
-        allTopics = [...allTopics, ...topics];
+        if (topics && topics.length > 0) {
+          allTopics = [...allTopics, ...topics];
+          successCount++;
+        }
       } catch (categoryError) {
         console.warn(`Failed to fetch topics for category ${category}:`, categoryError);
       }
+    }
+
+    // 检查是否成功获取了至少一些数据
+    if (allTopics.length === 0) {
+      console.warn('Tavily API返回了空数据，使用fallback热点话题');
+      const fallbackTopics = get2026HotTopics();
+      return res.status(200).json({
+        success: true,
+        data: fallbackTopics.slice(0, 6),
+        source: 'fallback_data',
+        note: 'Tavily API returned empty, using fallback topics'
+      });
     }
 
     // 去重并随机选择6个话题
@@ -24,27 +41,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
     const hotTopics = uniqueTopics.sort(() => 0.5 - Math.random()).slice(0, 6);
 
-    // 检查是否返回了有意义的数据
-    if (!hotTopics || hotTopics.length === 0) {
-      throw new Error('No topics returned from API');
+    // 确保最少返回6个话题
+    if (hotTopics.length < 6) {
+      const fallbackTopics = get2026HotTopics();
+      const additionalTopics = fallbackTopics.filter(
+        fb => !hotTopics.find(ht => ht.title === fb.title)
+      );
+      hotTopics.push(...additionalTopics.slice(0, 6 - hotTopics.length));
     }
 
     res.status(200).json({
       success: true,
-      data: hotTopics,
-      source: 'tavily_api'
+      data: hotTopics.slice(0, 6),
+      source: successCount > 0 ? 'tavily_api' : 'fallback_data'
     });
   } catch (error) {
     console.error('Error fetching hot topics from Tavily API:', error);
 
-    // 返回2026年相关的热点话题作为fallback
+    // 返回fallback热点话题，确保至少有6个
     const fallbackTopics = get2026HotTopics();
 
     res.status(200).json({
       success: true,
-      data: fallbackTopics,
-      source: 'fallback_2026_data',
-      note: 'Tavily API unavailable, showing curated 2026 topics'
+      data: fallbackTopics.slice(0, 6),
+      source: 'fallback_data',
+      note: 'Tavily API unavailable, showing fallback topics'
     });
   }
 }

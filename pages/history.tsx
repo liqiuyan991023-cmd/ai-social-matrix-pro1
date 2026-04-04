@@ -425,8 +425,10 @@ export default function HistoryPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-800 font-medium leading-relaxed hover:shadow-soft-md transition-shadow duration-300 max-h-96 overflow-y-auto">
-              {aiSummary || "暂无创作记录，开始创作吧！"}
+            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-800 font-medium leading-relaxed hover:shadow-soft-md transition-shadow duration-300 max-h-[600px] overflow-y-auto">
+              <div className="whitespace-pre-wrap">
+                {aiSummary || "暂无创作记录，开始创作吧！"}
+              </div>
             </div>
           )}
         </div>

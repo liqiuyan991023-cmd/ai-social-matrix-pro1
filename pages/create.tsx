@@ -270,7 +270,14 @@ export default function CreatePage() {
                           const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
                           if (storedPersona) {
                             const personaData = JSON.parse(storedPersona);
-                            return personaData.personaSummary || '基于你的特点，AI正在为你打造专属创作风格...';
+                            // 拼接完整的创作人格描述
+                            if (personaData.personality) {
+                              return personaData.personality;
+                            }
+                          }
+                          // 如果没有保存的创作人格，使用用户配置信息拼接
+                          if (userProfile) {
+                            return `基于你的特点（${userProfile.profession}、${userProfile.ageRange}），你的优势在于${userProfile.interests?.slice(0, 2).join('、') || '生活经验丰富'}。建议采用${userProfile.contentStyle}的表达方式，重点关注${userProfile.contentGoals?.join('/')|| '用户互动'}，这样最容易引起目标受众的共鸣。`;
                           }
                           return '基于你的特点，AI正在为你打造专属创作风格...';
                         } catch (error) {
