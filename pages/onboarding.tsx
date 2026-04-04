@@ -456,28 +456,50 @@ export default function OnboardingPage() {
               </button>
             </form>
           </div>
-        ) : profileCreated && (isCreativePersonaGenerated() || personaData?.profile) ? (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6 animate-fade-in">
+        ) : profileCreated ? (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
                   <CheckCircle2 className="h-4 w-4 text-white" />
                 </div>
                 <h3 className="font-semibold text-green-800">你的人设画像设置成功！</h3>
               </div>
-              <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新设置人设画像</p>
+              <p className="text-sm text-green-700 mt-2">你的专属创作风格已生成，现在可以开始创作了</p>
             </div>
 
-            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <PersonaDisplay
-                persona={personaData?.profile?.creativePersona || {}}
-                onEdit={() => setShowConfirmDialog(true)}
-              />
+            {/* 显示创作人格总结 */}
+            <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">你的创作人格画像</h3>
+              <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
+                <p className="text-gray-800 leading-relaxed">
+                  {(() => {
+                    try {
+                      const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                      if (savedPersona) {
+                        const personaData = JSON.parse(savedPersona);
+                        return personaData.personality || '基于你的特点，AI正在为你打造专属创作风格...';
+                      }
+                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                    } catch (error) {
+                      console.error('Error loading creative persona:', error);
+                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                    }
+                  })()}
+                </p>
+              </div>
+              
+              {personaData?.profile?.creativePersona && (
+                <PersonaDisplay
+                  persona={personaData.profile.creativePersona}
+                  onEdit={() => setShowConfirmDialog(true)}
+                />
+              )}
             </div>
 
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
               <button
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push("/create")}
                 className="w-full bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 开始创作
@@ -489,16 +511,6 @@ export default function OnboardingPage() {
               >
                 重新设置人设画像
               </button>
-            </div>
-          </div>
-        ) : personaLoading || (profileCreated && !isCreativePersonaGenerated()) ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">正在生成你的创作人格</h3>
-              <p className="text-sm text-gray-600">AI正在分析你的特点，打造专属的创作风格...</p>
             </div>
           </div>
         ) : (
