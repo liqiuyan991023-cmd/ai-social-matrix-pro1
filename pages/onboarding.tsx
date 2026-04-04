@@ -61,28 +61,26 @@ export default function OnboardingPage() {
       const result = await response.json();
       // 存储 userId 到 localStorage
       localStorage.setItem('userId', userId);
-      // 立即刷新 SWR 缓存，展示已成功创建的人设画像
-      await mutate(`/api/user/profile?userId=${userId}`);
+      // 存储用户画像到localStorage
+      localStorage.setItem(`userProfile_${userId}`, JSON.stringify(result.profile));
+      // 设置成功状态并停止加载
       setProfileCreated(true);
+      setIsLoading(false);
       return result;
     } catch (error) {
       console.error("Error creating profile:", error);
       alert("创建画像失败，请重试");
-      throw error;
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
   
   const { data: personaData, isLoading: personaLoading } = useSWR(
-    userId ? `/api/user/profile?userId=${userId}` : null,
+    userId && !profileCreated ? `/api/user/profile?userId=${userId}` : null,
     async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) return null;
       return response.json();
-    },
-    {
-      refreshInterval: 2000,
     }
   );
   
