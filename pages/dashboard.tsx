@@ -104,19 +104,22 @@ export default function DashboardPage() {
   const handleTopicClick = async (topic: any) => {
     const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
     if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-      const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-      if (newWindow) {
-        newWindow.focus();
-      }
+      try {
+        // 在新窗口打开链接
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.focus();
+        }
 
-      // 后台埋点统计，不阻塞页面跳转
-      fetch('/api/content/topics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'click', topicId: topic.id || topic.title })
-      }).catch((err) => {
+        // 后台埋点统计，不阻塞页面跳转
+        await fetch('/api/content/topics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'click', topicId: topic.id || topic.title })
+        });
+      } catch (err) {
         console.error('Topic click tracking failed:', err);
-      });
+      }
       return;
     }
 

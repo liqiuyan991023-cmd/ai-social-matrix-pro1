@@ -4,8 +4,25 @@ import { TavilyService } from '../../../lib/services/tavilyService';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const tavilyService = new TavilyService();
-    // 使用更具体的2026年相关查询
-    const hotTopics = await tavilyService.getHotTopics('2026年热门话题 趋势 新品 穿搭 科技 生活方式 小红书', '科技');
+    // 使用分类来获取多样化的热点话题
+    const categories = ['数码', '个人成长', '效率工具', '职场', '美食', '生活方式', '家居', '效率'];
+    let allTopics: any[] = [];
+
+    // 从多个分类获取热点话题
+    for (const category of categories) {
+      try {
+        const topics = await tavilyService.getHotTopics('2026年热门话题 趋势 新品 穿搭 科技 生活方式 小红书', category);
+        allTopics = [...allTopics, ...topics];
+      } catch (categoryError) {
+        console.warn(`Failed to fetch topics for category ${category}:`, categoryError);
+      }
+    }
+
+    // 去重并随机选择6个话题
+    const uniqueTopics = allTopics.filter((topic, index, self) =>
+      index === self.findIndex((t) => t.title === topic.title)
+    );
+    const hotTopics = uniqueTopics.sort(() => 0.5 - Math.random()).slice(0, 6);
 
     // 检查是否返回了有意义的数据
     if (!hotTopics || hotTopics.length === 0) {

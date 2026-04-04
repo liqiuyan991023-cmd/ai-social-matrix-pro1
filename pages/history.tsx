@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { History as HistoryIcon, Sparkles, MessageSquare, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { History as HistoryIcon, Sparkles, MessageSquare, RefreshCw, CheckCircle2, Trash2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
 import { ContentGenerationService } from '../lib/services/contentGenerationService';
@@ -265,6 +265,33 @@ export default function HistoryPage() {
     }
   };
 
+  // 删除创作记录
+  const handleDeleteCreation = (creationId: string) => {
+    if (confirm('确定要删除这条创作记录吗？此操作不可恢复。')) {
+      try {
+        const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
+        const updatedCreations = existingCreations.filter((c: Creation) => c.id !== creationId);
+        localStorage.setItem('userCreations', JSON.stringify(updatedCreations));
+
+        // 同时删除相关的反馈
+        const existingFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]') as Feedback[];
+        const updatedFeedbacks = existingFeedbacks.filter((f: Feedback) => f.creationId !== creationId);
+        localStorage.setItem('userFeedbacks', JSON.stringify(updatedFeedbacks));
+
+        // 刷新页面显示
+        setCreations(updatedCreations);
+
+        // 重新生成AI总结
+        generateAiSummary(updatedCreations, updatedFeedbacks);
+
+        alert('删除成功！');
+      } catch (error) {
+        console.error('Error deleting creation:', error);
+        alert('删除失败，请重试');
+      }
+    }
+  };
+
   // 更新generateAiSummary函数以包含反馈信息和时间筛选
   const generateAiSummary = async (creations: any[], feedbacks: any[] = []) => {
     setIsGeneratingSummary(true);
@@ -398,7 +425,7 @@ export default function HistoryPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-800 font-medium leading-relaxed hover:shadow-soft-md transition-shadow duration-300">
+            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-800 font-medium leading-relaxed hover:shadow-soft-md transition-shadow duration-300 max-h-96 overflow-y-auto">
               {aiSummary || "暂无创作记录，开始创作吧！"}
             </div>
           )}
@@ -466,6 +493,13 @@ export default function HistoryPage() {
                   >
                     <RefreshCw className="w-3 h-3" />
                     优化
+                  </button>
+                  <button
+                    onClick={() => handleDeleteCreation(creation.id)}
+                    className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-red-500 hover:text-red-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    删除
                   </button>
                 </div>
               </div>

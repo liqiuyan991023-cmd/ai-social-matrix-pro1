@@ -31,12 +31,12 @@ export default function OnboardingPage() {
       if (data.customContentPreference) {
         contentPreferences.push(data.customContentPreference);
       }
-      
+
       let contentStyles = [...data.contentStyle];
       if (data.customContentStyle) {
         contentStyles.push(data.customContentStyle);
       }
-      
+
       const processedData = {
         userId,
         ageRange: data.ageRange,
@@ -47,17 +47,17 @@ export default function OnboardingPage() {
         contentStyle: contentStyles.join(', '),
         preferredLength: data.preferredLength
       };
-      
+
       const response = await fetch("/api/user/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(processedData),
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to create profile");
       }
-      
+
       const result = await response.json();
       // 存储 userId 到 localStorage
       localStorage.setItem('userId', userId);
@@ -66,12 +66,60 @@ export default function OnboardingPage() {
       // 设置成功状态并停止加载
       setProfileCreated(true);
       setIsLoading(false);
+
+      // 调用AI生成创作人格总结
+      await generateCreativePersona(result.profile);
+
       return result;
     } catch (error) {
       console.error("Error creating profile:", error);
       alert("创建画像失败，请重试");
       setIsLoading(false);
       throw error;
+    }
+  };
+
+  // 生成创作人格总结
+  const generateCreativePersona = async (profile: any) => {
+    try {
+      const prompt = `基于以下用户信息生成一个详细的创作人格画像：
+
+用户基本信息：
+- 年龄范围：${profile.ageRange}
+- 职业：${profile.profession}
+- 兴趣：${profile.interests.join(', ')}
+- 内容目标：${profile.contentGoals.join(', ')}
+- 表达风格：${profile.contentStyle}
+- 内容长度偏好：${profile.preferredLength}
+
+请生成一个详细的创作人格画像，包含：
+1. 创作者人设描述
+2. 适合的内容类型和主题
+3. 表达风格特点
+4. 受众群体分析
+5. 内容创作建议
+
+请用友好的语气输出，让用户感受到AI的个性化关怀。`;
+
+      const response = await fetch('/api/content/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // 保存创作人格到localStorage
+        const creativePersona = {
+          ...profile,
+          personaSummary: data.summary,
+          generatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(creativePersona));
+      }
+    } catch (error) {
+      console.error('Error generating creative persona:', error);
+      // 即使生成失败，也不影响整体流程
     }
   };
   

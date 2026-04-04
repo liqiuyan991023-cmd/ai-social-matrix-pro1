@@ -30,8 +30,34 @@ export default function CreatePage() {
       return;
     }
     setUserId(storedUserId);
-    fetchUserProfile(storedUserId);
+    // 同时从localStorage和API获取用户画像，确保加载成功
+    loadUserProfile(storedUserId);
   }, [router]);
+
+  const loadUserProfile = async (userId: string) => {
+    try {
+      setIsLoadingProfile(true);
+      // 首先尝试从localStorage获取
+      const storedProfile = localStorage.getItem(`userProfile_${userId}`);
+      if (storedProfile) {
+        const parsedProfile = JSON.parse(storedProfile);
+        setUserProfile(parsedProfile);
+      }
+
+      // 同时调用API获取最新数据
+      await fetchUserProfile(userId);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      // 即使出错，也尝试从localStorage获取作为备用
+      const storedProfile = localStorage.getItem(`userProfile_${userId}`);
+      if (storedProfile) {
+        const parsedProfile = JSON.parse(storedProfile);
+        setUserProfile(parsedProfile);
+      }
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -232,6 +258,30 @@ export default function CreatePage() {
                   </div>
                   <h3 className="font-semibold text-sm text-gray-800">当前创作人格</h3>
                 </div>
+
+                {/* 显示完整的创作人格描述 */}
+                <div className="mb-4">
+                  <div className="bg-white rounded-xl p-4 border border-rose-200 shadow-soft-sm">
+                    <span className="text-gray-500 block mb-2 text-xs">AI创作人格总结</span>
+                    <div className="text-sm text-gray-800 leading-relaxed">
+                      {(() => {
+                        try {
+                          // 尝试从localStorage获取创作人格总结
+                          const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                          if (storedPersona) {
+                            const personaData = JSON.parse(storedPersona);
+                            return personaData.personaSummary || '基于你的特点，AI正在为你打造专属创作风格...';
+                          }
+                          return '基于你的特点，AI正在为你打造专属创作风格...';
+                        } catch (error) {
+                          console.error('Error loading creative persona:', error);
+                          return '基于你的特点，AI正在为你打造专属创作风格...';
+                        }
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
                     <span className="text-gray-500 block mb-1">风格</span>
