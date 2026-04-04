@@ -287,32 +287,25 @@ export default function HistoryPage() {
         return;
       }
 
-      // 构建提示词
-      const prompt = `请基于以下创作历史和反馈信息，生成一个详细的创作总结分析：
+      const storedFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]') as any[];
+      const feedbacksToUse = feedbacks.length > 0 ? feedbacks : storedFeedbacks;
 
-创作历史（${selectedTimeRange}）：
-${filteredCreations.map(c => `- ${c.title} (${c.topic?.category || '生活方式'})`).join('\n')}
+      let profile = userProfile;
+      if (!profile && userId) {
+        profile = await fetchUserProfile(userId);
+      }
 
-反馈信息：
-${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFeedback}`).join('\n') : '暂无反馈'}
+      const requestBody = {
+        creations: filteredCreations,
+        feedbacks: feedbacksToUse,
+        userProfile: profile || null,
+        userRequirements: userRequirements || ''
+      };
 
-用户要求：${userRequirements || '无特定要求'}
-
-请从以下方面进行分析：
-1. 创作主题偏好和趋势
-2. 内容质量和用户反馈
-3. 创作频率和活跃度
-4. 改进建议和下一步计划
-
-请用友好的语气输出总结，包含具体数据和建议。
-
-如果创作历史为空，请直接输出："暂无创作记录，开始创作吧！"并给出一些创作建议。`;
-
-      // 调用summary API
       const response = await fetch('/api/content/summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -320,7 +313,7 @@ ${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFee
       }
 
       const data = await response.json();
-      setAiSummary(data.summary);
+      setAiSummary(data.summary || 'AI 创作总结生成失败，请稍后再试。');
     } catch (error) {
       console.error('Error generating AI summary:', error);
       setAiSummary('AI 创作总结生成失败，请稍后再试。');

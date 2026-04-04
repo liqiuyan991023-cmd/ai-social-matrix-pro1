@@ -42,20 +42,28 @@ export default function CreatePage() {
         setUserProfile(data.profile);
         // 保存到localStorage作为备份
         localStorage.setItem(`userProfile_${userId}`, JSON.stringify(data.profile));
-      } else {
-        // API失败时，尝试从localStorage获取
-        const storedProfile = localStorage.getItem(`userProfile_${userId}`);
-        if (storedProfile) {
-          setUserProfile(JSON.parse(storedProfile));
-        }
+        return data.profile;
       }
+
+      // API失败时，尝试从localStorage获取
+      const storedProfile = localStorage.getItem(`userProfile_${userId}`);
+      if (storedProfile) {
+        const parsedProfile = JSON.parse(storedProfile);
+        setUserProfile(parsedProfile);
+        return parsedProfile;
+      }
+
+      return null;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       // 网络错误时，尝试从localStorage获取
       const storedProfile = localStorage.getItem(`userProfile_${userId}`);
       if (storedProfile) {
-        setUserProfile(JSON.parse(storedProfile));
+        const parsedProfile = JSON.parse(storedProfile);
+        setUserProfile(parsedProfile);
+        return parsedProfile;
       }
+      return null;
     } finally {
       setIsLoadingProfile(false);
     }
@@ -76,17 +84,13 @@ export default function CreatePage() {
 
     try {
       // 确保userProfile已加载
-      if (!userProfile) {
-        await fetchUserProfile(userId);
-        // 再次检查userProfile，如果仍然为null，尝试从localStorage获取
-        if (!userProfile) {
-          const storedProfile = localStorage.getItem(`userProfile_${userId}`);
-          if (storedProfile) {
-            setUserProfile(JSON.parse(storedProfile));
-          } else {
-            throw new Error('用户画像加载失败，请重新设置人设画像');
-          }
-        }
+      let profile = userProfile;
+      if (!profile) {
+        profile = await fetchUserProfile(userId);
+      }
+
+      if (!profile) {
+        throw new Error('用户画像加载失败，请重新设置人设画像');
       }
 
       // 调用API生成内容
@@ -206,7 +210,7 @@ export default function CreatePage() {
               <button
                 onClick={handleGenerate}
                 disabled={!idea.trim() || isGenerating}
-                className="w-full mt-4 bg-red-500 text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                className="w-full mt-4 bg-red-500 text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium disabled:bg-red-300 disabled:text-white disabled:opacity-90 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center gap-2 text-white font-medium">

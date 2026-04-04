@@ -11,6 +11,7 @@ export default function OnboardingPage() {
   const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [profileCreated, setProfileCreated] = useState(false);
   const [formData, setFormData] = useState({
     ageRange: '',
     profession: '',
@@ -60,7 +61,9 @@ export default function OnboardingPage() {
       const result = await response.json();
       // 存储 userId 到 localStorage
       localStorage.setItem('userId', userId);
-      // 成功创建后不直接跳转，让页面显示成功信息
+      // 立即刷新 SWR 缓存，展示已成功创建的人设画像
+      await mutate(`/api/user/profile?userId=${userId}`);
+      setProfileCreated(true);
       return result;
     } catch (error) {
       console.error("Error creating profile:", error);
@@ -110,6 +113,12 @@ export default function OnboardingPage() {
     });
     // 清除 SWR 缓存
     mutate(`/api/user/profile?userId=${userId}`, null);
+    setProfileCreated(false);
+  };
+
+  const handleResetPersona = () => {
+    handleRecreate();
+    setShowConfirmDialog(false);
   };
   
   return (
@@ -117,7 +126,7 @@ export default function OnboardingPage() {
       <TopBar title="人设诊断" showIcon={false} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {!personaData?.profile ? (
+        {!personaData?.profile && !profileCreated ? (
           <div className="space-y-8">
             <div className="flex flex-col items-center justify-center py-8 animate-fade-in">
               <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-soft-lg animate-pulse-soft">
@@ -370,7 +379,7 @@ export default function OnboardingPage() {
               </button>
             </form>
           </div>
-        ) : personaLoading ? (
+        ) : personaLoading || (profileCreated && !personaData?.profile) ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
               <Sparkles className="w-8 h-8 text-white" />
@@ -408,10 +417,10 @@ export default function OnboardingPage() {
               </button>
 
               <button
-                onClick={() => setShowConfirmDialog(true)}
+                onClick={handleResetPersona}
                 className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
               >
-                重新创建人设
+                重新设置人设画像
               </button>
             </div>
           </div>

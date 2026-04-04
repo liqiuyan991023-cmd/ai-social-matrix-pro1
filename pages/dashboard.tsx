@@ -46,22 +46,52 @@ export default function DashboardPage() {
   const getDefaultHotTopics = () => {
     return [
       {
-        title: "2025春季穿搭趋势",
-        tag: "时尚",
-        heat: "95k",
-        url: "https://www.xiaohongshu.com/search_result?keyword=2025春季穿搭"
-      },
-      {
-        title: "办公室养生小妙招",
+        title: "办公室必备的5个解压神器",
         tag: "职场",
-        heat: "82k",
-        url: "https://www.xiaohongshu.com/search_result?keyword=办公室养生"
+        heat: "92k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=%E5%8A%9E%E5%85%AC%E5%AE%A4%E5%BF%85%E5%A4%87%E7%9A%845%E4%B8%AA%E8%A7%A3%E5%8E%8B%E7%A5%9E%E5%99%A8"
       },
       {
-        title: "周末短途旅行推荐",
-        tag: "旅行",
-        heat: "135k",
-        url: "https://www.xiaohongshu.com/search_result?keyword=周末短途旅行"
+        title: "2024年最值得入手的数码产品",
+        tag: "数码",
+        heat: "110k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=2024%E5%B9%B4%E6%9C%80%E5%80%BC%E5%BE%97%E5%85%A5%E6%89%8B%E7%9A%84%E6%95%B0%E7%A0%81%E4%BA%A7%E5%93%81"
+      },
+      {
+        title: "极简主义生活方式指南",
+        tag: "生活方式",
+        heat: "88k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=%E6%9E%81%E7%AE%80%E4%B8%BB%E4%B9%89%E7%94%9F%E6%B4%BB%E6%96%B9%E5%BC%8F%E6%8C%87%E5%8D%97"
+      },
+      {
+        title: "这绝对是被严重低估的宝藏APP",
+        tag: "效率工具",
+        heat: "120k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=%E8%B4%AF%E8%B4%A8APP"
+      },
+      {
+        title: "2024年流行的家居装饰趋势",
+        tag: "家居",
+        heat: "99k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=2024%E5%B9%B4%E6%B5%81%E8%A1%8C%E7%9A%84%E5%AE%B6%E5%B1%85%E8%A3%85%E9%A5%B0%E8%B6%8B%E5%8A%BF"
+      },
+      {
+        title: "高效时间管理的5个技巧",
+        tag: "效率",
+        heat: "86k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=%E9%AB%98%E6%95%88%E6%97%B6%E9%97%B4%E7%AE%A1%E7%90%86%E7%9A%845%E4%B8%AA%E6%8A%80%E5%B7%A7"
+      },
+      {
+        title: "早起10分钟的微习惯改变人生",
+        tag: "个人成长",
+        heat: "93k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=%E6%97%A9%E8%B5%B710%E5%88%86%E9%92%9F%E7%9A%84%E5%BE%AE%E4%B9%A0%E6%83%AF%E6%94%B9%E5%8F%98%E4%BA%BA%E7%94%9F"
+      },
+      {
+        title: "2024极简桌面改造指南",
+        tag: "职场",
+        heat: "101k",
+        url: "https://www.xiaohongshu.com/search_result?keyword=2024%E6%9E%81%E7%AE%80%E6%A1%8C%E9%9D%A2%E6%94%B9%E9%80%A0%E6%8C%87%E5%8D%97"
       }
     ];
   };
@@ -72,33 +102,25 @@ export default function DashboardPage() {
 
   // 处理话题点击
   const handleTopicClick = async (topic: any) => {
-    try {
-      // 更新点击统计
-      await fetch('/api/content/topics', {
+    const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.focus();
+      }
+
+      // 后台埋点统计，不阻塞页面跳转
+      fetch('/api/content/topics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'click', topicId: topic.id || topic.title })
+      }).catch((err) => {
+        console.error('Topic click tracking failed:', err);
       });
-
-      // 打开链接
-      const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
-      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-        return; // 成功打开后返回
-      }
-
-      // 如果没有有效的URL，显示提示
-      alert('正在获取爆款内容，请稍后再试...');
-    } catch (error) {
-      console.error('Topic click error:', error);
-      // 即使统计失败，仍然尝试打开链接
-      const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
-      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      } else {
-        alert('内容加载中，请稍后再试...');
-      }
+      return;
     }
+
+    alert('未找到可跳转的链接，请稍后重试');
   };
 
   if (!userId) {
