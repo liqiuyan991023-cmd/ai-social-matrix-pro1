@@ -69,6 +69,9 @@ export default function OnboardingPage() {
 
       // 调用AI生成创作人格总结
       await generateCreativePersona(result.profile);
+      
+      // 手动刷新persona数据
+      mutatePersona();
 
       return result;
     } catch (error) {
@@ -124,13 +127,13 @@ export default function OnboardingPage() {
   };
   
   const { data: personaData, isLoading: personaLoading, mutate: mutatePersona } = useSWR(
-    userId && !profileCreated ? `/api/user/profile?userId=${userId}` : null,
+    userId ? `/api/user/profile?userId=${userId}` : null,
     async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) return null;
       return response.json();
     },
-    { revalidateOnFocus: false, shouldRetryOnError: false }
+    { revalidateOnFocus: false, shouldRetryOnError: false, refreshInterval: profileCreated ? 1000 : 0 }
   );
   
   const handleSubmit = async (e: React.FormEvent) => {
