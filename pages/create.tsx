@@ -40,9 +40,22 @@ export default function CreatePage() {
       if (response.ok) {
         const data = await response.json();
         setUserProfile(data.profile);
+        // 保存到localStorage作为备份
+        localStorage.setItem(`userProfile_${userId}`, JSON.stringify(data.profile));
+      } else {
+        // API失败时，尝试从localStorage获取
+        const storedProfile = localStorage.getItem(`userProfile_${userId}`);
+        if (storedProfile) {
+          setUserProfile(JSON.parse(storedProfile));
+        }
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      // 网络错误时，尝试从localStorage获取
+      const storedProfile = localStorage.getItem(`userProfile_${userId}`);
+      if (storedProfile) {
+        setUserProfile(JSON.parse(storedProfile));
+      }
     } finally {
       setIsLoadingProfile(false);
     }
@@ -65,8 +78,14 @@ export default function CreatePage() {
       // 确保userProfile已加载
       if (!userProfile) {
         await fetchUserProfile(userId);
+        // 再次检查userProfile，如果仍然为null，尝试从localStorage获取
         if (!userProfile) {
-          throw new Error('用户画像加载失败，请重新设置人设画像');
+          const storedProfile = localStorage.getItem(`userProfile_${userId}`);
+          if (storedProfile) {
+            setUserProfile(JSON.parse(storedProfile));
+          } else {
+            throw new Error('用户画像加载失败，请重新设置人设画像');
+          }
         }
       }
 
@@ -187,7 +206,7 @@ export default function CreatePage() {
               <button
                 onClick={handleGenerate}
                 disabled={!idea.trim() || isGenerating}
-                className="w-full mt-4 bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                className="w-full mt-4 bg-red-500 text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center gap-2 text-white font-medium">
@@ -268,9 +287,29 @@ export default function CreatePage() {
                   )}
                 </button>
                 <button
-                  onClick={() => {
-                    alert("内容已保存到草稿！");
-                    router.push("/dashboard");
+                  onClick={async () => {
+                    try {
+                      const creationData = {
+                        id: `creation_${Date.now()}`,
+                        userId: userId!,
+                        title: idea,
+                        content: generatedContent,
+                        keywords: { tags: keywords },
+                        topic: selectedTopic || { category: '生活方式' },
+                        createdAt: Date.now(),
+                      };
+
+                      // 保存到localStorage
+                      const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+                      existingCreations.push(creationData);
+                      localStorage.setItem('userCreations', JSON.stringify(existingCreations));
+
+                      alert("内容已保存到草稿！");
+                      router.push("/dashboard");
+                    } catch (error) {
+                      console.error('Error saving to draft:', error);
+                      alert('保存草稿失败，请重试');
+                    }
                   }}
                   className="flex-1 py-3.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-primary hover:text-primary font-medium flex items-center justify-center gap-2 transition-all duration-300"
                 >
@@ -287,11 +326,12 @@ export default function CreatePage() {
                     // 接受该生成内容并保存到历史
                     try {
                       const creationData = {
+                        id: `creation_${Date.now()}`,
                         userId: userId!,
                         title: idea,
                         content: generatedContent,
                         keywords: { tags: keywords },
-                        topic: selectedTopic,
+                        topic: selectedTopic || { category: '生活方式' },
                         createdAt: Date.now(),
                       };
 
@@ -375,10 +415,10 @@ export default function CreatePage() {
                     setHasResult(false);
                     setIdea('');
                   }}
-                  className="w-full py-3.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-purple-500 hover:text-purple-600 font-medium transition-all duration-300 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-red-500 text-white rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
                 >
                   <Sparkles className="w-4 h-4" />
-                  重新生成
+                  重新创建
                 </button>
               </div>
             </div>

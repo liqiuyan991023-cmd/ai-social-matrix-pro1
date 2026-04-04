@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
       // 打开链接
       const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
-      if (url && url.startsWith('http')) {
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
         window.open(url, '_blank', 'noopener,noreferrer');
         return; // 成功打开后返回
       }
@@ -93,7 +93,7 @@ export default function DashboardPage() {
       console.error('Topic click error:', error);
       // 即使统计失败，仍然尝试打开链接
       const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
-      if (url && url.startsWith('http')) {
+      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
         window.open(url, '_blank', 'noopener,noreferrer');
       } else {
         alert('内容加载中，请稍后再试...');

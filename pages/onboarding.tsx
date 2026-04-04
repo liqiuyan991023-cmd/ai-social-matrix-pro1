@@ -364,7 +364,7 @@ export default function OnboardingPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-primary text-white py-4 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                className="w-full bg-red-500 text-white py-4 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 {isLoading ? "生成中..." : "生成专属人设"}
               </button>

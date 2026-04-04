@@ -389,7 +389,7 @@ ${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFee
               <button
                 onClick={() => generateAiSummary(creations)}
                 disabled={isGeneratingSummary}
-                className="w-full bg-gradient-primary text-white py-2 rounded-lg hover:shadow-soft-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                className="w-full bg-red-500 text-white py-2 rounded-lg hover:shadow-soft-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
               >
                 {isGeneratingSummary ? '生成中...' : '重新生成总结'}
               </button>
