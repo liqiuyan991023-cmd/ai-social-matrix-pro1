@@ -389,7 +389,7 @@ ${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFee
               <button
                 onClick={() => generateAiSummary(creations)}
                 disabled={isGeneratingSummary}
-                className="w-full bg-gradient-primary text-white py-2 rounded-lg hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                className="w-full bg-gradient-primary text-white py-2 rounded-lg hover:shadow-soft-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
               >
                 {isGeneratingSummary ? '生成中...' : '重新生成总结'}
               </button>
@@ -480,7 +480,17 @@ ${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFee
           </div>
         </div>
       </div>
-      <BottomNav />
+      {/* 重新创建按钮 */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <button
+            onClick={() => router.push('/onboarding')}
+            className="w-full py-3.5 border-2 border-primary text-primary rounded-xl hover:bg-primary/5 font-medium transition-all duration-300 flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            重新创建
+          </button>
+        </div>
+        <BottomNav />
     </div>
   );
 }

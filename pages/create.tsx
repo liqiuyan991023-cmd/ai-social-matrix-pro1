@@ -170,7 +170,7 @@ export default function CreatePage() {
               </div>
               <textarea
                 placeholder="输入一个简单的想法，比如：买了一个超好用的平价键盘..."
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary min-h-[150px] resize-none text-gray-700 text-sm leading-relaxed transition-all duration-200"
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary min-h-[150px] resize-none text-gray-800 font-medium leading-relaxed transition-all duration-200"
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
               />
@@ -180,11 +180,11 @@ export default function CreatePage() {
                 className="w-full mt-4 bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
                 {isGenerating ? (
-                  <span className="flex items-center justify-center gap-2">
+                  <span className="flex items-center justify-center gap-2 text-white font-medium">
                     <Loader2 className="w-4 h-4 animate-spin" /> AI 爆发灵感中...
                   </span>
                 ) : (
-                  <span className="flex items-center justify-center gap-2">
+                  <span className="flex items-center justify-center gap-2 text-white font-semibold">
                     <Sparkles className="w-4 h-4" /> 一键生成笔记
                   </span>
                 )}

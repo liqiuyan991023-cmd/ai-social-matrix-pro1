@@ -6,10 +6,11 @@ export interface TopBarProps {
   title: string;
   showIcon?: boolean;
   showBackButton?: boolean;
+  showLogo?: boolean;
   onBack?: () => void;
 }
 
-export default function TopBar({ title, showIcon = false, showBackButton = false, onBack }: TopBarProps) {
+export default function TopBar({ title, showIcon = false, showBackButton = false, showLogo = false, onBack }: TopBarProps) {
   const router = useRouter();
 
   const handleBack = () => {
@@ -37,7 +38,7 @@ export default function TopBar({ title, showIcon = false, showBackButton = false
               <Sparkles className="w-4 h-4 text-white" />
             </div>
           )}
-          <h1 className="text-lg font-semibold text-gray-800">{title}</h1>
+          <h1 className={`font-bold text-gray-800 ${showLogo ? 'text-2xl bg-gradient-to-r from-red-500 to-rose-500 bg-clip-text text-transparent' : 'text-lg'}`}>{title}</h1>
         </div>
         <div className="flex items-center gap-2">
           {/* 可以添加右侧的操作按钮，比如通知、设置等 */}

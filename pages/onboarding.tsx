@@ -391,9 +391,9 @@ export default function OnboardingPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-green-800">您的人物画像已生成√</h3>
+                <h3 className="font-semibold text-green-800">你的人设画像设置成功！</h3>
               </div>
-              <p className="text-sm text-green-700 mt-2">下方可标注重新设置的字样</p>
+              <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新设置人设画像</p>
             </div>
 
             <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>

@@ -48,13 +48,8 @@ class MockRedis {
   }
 }
 
-// 检查环境变量是否存在
-const hasRedisEnv = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
-
-// 导出Redis实例，优先使用真实Redis，否则使用模拟实现
-export const redis = hasRedisEnv 
-  ? new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    })
-  : new MockRedis() as any;
+// 强制使用真实Upstash Redis
+export const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
