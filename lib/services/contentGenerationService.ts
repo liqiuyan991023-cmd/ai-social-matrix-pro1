@@ -47,18 +47,20 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
 - 表达风格：${userProfile.contentStyle}
 - 内容长度：${userProfile.preferredLength}
 
+${idea ? `【重要】用户创作想法（必须严格遵循）：${idea}
+
+请基于用户的这个具体想法来创作内容，不能偏离这个主题！` : ""}
+
 创作主题：
 - 标题：${title}
 - 原始主题：${topic.title}
 - 角度：${topic.contentAngle}
 - 分类：${topic.category}
 
-${idea ? `用户创作想法：${idea}` : ""}
-
 ${regenerate ? `用户反馈：${regenerate}` : ""}
 
 要求：
-1. 符合小红书平台风格
+1. ${idea ? "严格基于用户的创作想法来生成内容，不能生成无关的内容" : "符合小红书平台风格"}
 2. 语言口语化，亲切自然
 3. 结构清晰，有开头、中间、结尾
 4. 内容具体，有细节和个人感受
