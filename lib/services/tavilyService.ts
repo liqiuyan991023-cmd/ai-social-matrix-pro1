@@ -9,7 +9,7 @@ export class TavilyService {
 
   constructor() {
     this.apiKey = process.env.TAVILY_API_KEY || 'YOUR_TAVILY_API_KEY';
-    this.baseUrl = process.env.TAVILY_API_URL || 'https://api.tavily.com';
+    this.baseUrl = process.env.TAVILY_API_URL || 'https://api.tavily.com/v1';
     this.cache = new Map();
     this.cacheExpiry = 30 * 60 * 1000; // 30分钟缓存
   }

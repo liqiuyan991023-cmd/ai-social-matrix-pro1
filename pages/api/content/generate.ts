@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   try {
-    const { userId, topicId, regenerate } = req.body;
+    const { userId, topicId, regenerate, idea } = req.body;
     
     if (!userId || !topicId) {
       return res.status(400).json({ error: "User ID and Topic ID are required" });
@@ -98,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     
-    await generateContentStream(res, contentService, userProfile, topic, regenerate);
+    await generateContentStream(res, contentService, userProfile, topic, regenerate, idea);
     
   } catch (error) {
     console.error("Error in content generation:", error);
@@ -111,18 +111,19 @@ async function generateContentStream(
   contentService: ContentGenerationService,
   userProfile: any,
   topic: any,
-  regenerate?: string
+  regenerate?: string,
+  idea?: string
 ) {
   res.write(`data: ${JSON.stringify({ stage: "title", content: "" })}\n\n`);
   
-  const titles = await contentService.generateTitle(userProfile, topic, regenerate);
+  const titles = await contentService.generateTitle(userProfile, topic, regenerate, idea);
   const selectedTitle = titles[0];
   
   res.write(`data: ${JSON.stringify({ stage: "title", content: selectedTitle })}\n\n`);
   
   res.write(`data: ${JSON.stringify({ stage: "content", content: "" })}\n\n`);
   
-  const content = await contentService.generateContent(userProfile, topic, selectedTitle, regenerate);
+  const content = await contentService.generateContent(userProfile, topic, selectedTitle, regenerate, idea);
   
   res.write(`data: ${JSON.stringify({ stage: "content", content })}\n\n`);
   

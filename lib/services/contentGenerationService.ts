@@ -6,7 +6,7 @@ export class ContentGenerationService {
   private readonly CREATION_KEY = (creationId: string) => `creation:${creationId}`;
   private readonly USER_CREATIONS_KEY = (userId: string) => `user:${userId}:creations`;
 
-  async generateTitle(userProfile: UserProfile, topic: any, regenerate?: string): Promise<string[]> {
+  async generateTitle(userProfile: UserProfile, topic: any, regenerate?: string, idea?: string): Promise<string[]> {
     const prompt = `基于以下信息为小红书笔记生成3个吸引人的标题：
 
 用户信息：
@@ -19,6 +19,8 @@ export class ContentGenerationService {
 - 标题：${topic.title}
 - 角度：${topic.contentAngle}
 - 分类：${topic.category}
+
+${idea ? `用户创作想法：${idea}` : ""}
 
 ${regenerate ? `用户反馈：${regenerate}` : ""}
 
@@ -35,7 +37,7 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
     return response.split('\n').filter(line => line.trim());
   }
 
-  async generateContent(userProfile: UserProfile, topic: any, title: string, regenerate?: string): Promise<string> {
+  async generateContent(userProfile: UserProfile, topic: any, title: string, regenerate?: string, idea?: string): Promise<string> {
     const prompt = `基于以下信息生成小红书笔记正文：
 
 用户信息：
@@ -50,6 +52,8 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
 - 原始主题：${topic.title}
 - 角度：${topic.contentAngle}
 - 分类：${topic.category}
+
+${idea ? `用户创作想法：${idea}` : ""}
 
 ${regenerate ? `用户反馈：${regenerate}` : ""}
 

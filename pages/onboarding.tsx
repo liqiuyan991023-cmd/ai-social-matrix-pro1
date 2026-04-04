@@ -60,8 +60,7 @@ export default function OnboardingPage() {
       const result = await response.json();
       // 存储 userId 到 localStorage
       localStorage.setItem('userId', userId);
-      // 成功创建后直接跳转到dashboard
-      router.push("/dashboard");
+      // 成功创建后不直接跳转，让页面显示成功信息
       return result;
     } catch (error) {
       console.error("Error creating profile:", error);
@@ -91,8 +90,7 @@ export default function OnboardingPage() {
 
     if (formData.ageRange && formData.profession && formData.interests && hasContentPreference && hasContentStyle && formData.preferredLength) {
       await createProfile(formData);
-      // 创建成功后跳转到dashboard
-      router.push('/dashboard');
+      // 创建成功后不直接跳转，让页面显示成功信息
     } else {
       alert('请填写所有必填项');
     }

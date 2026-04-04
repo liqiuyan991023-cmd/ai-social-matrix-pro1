@@ -76,7 +76,8 @@ export default function CreatePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: userId,
-          topicId: 'default_topic'
+          topicId: 'default_topic',
+          idea: idea
         })
       });
 
