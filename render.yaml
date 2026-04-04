@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ai-social-matrix-pro
+    env: node
+    plan: starter
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    nodeVersion: 20
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://ai-social-matrix-pro.onrender.com
+      - key: LONGCAT_API_URL
+        sync: false
+      - key: LONGCAT_API_KEY
+        sync: false
+      - key: TAVILY_API_URL
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: UPSTASH_VECTOR_REST_URL
+        sync: false
+      - key: UPSTASH_VECTOR_REST_TOKEN
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://ai-social-matrix-pro.onrender.com

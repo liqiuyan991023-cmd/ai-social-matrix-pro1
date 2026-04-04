@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     } else {
       // 尝试创建默认用户画像
-      const defaultProfileData = {
+      const defaultProfileData: any = {
         userId: testUserId,
         ageRange: "26-35",
         profession: "创作者",
