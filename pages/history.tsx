@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { History as HistoryIcon, Sparkles, MessageSquare, RefreshCw } from 'lucide-react';
+import { History as HistoryIcon, Sparkles, MessageSquare, RefreshCw, CheckCircle2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
 import { ContentGenerationService } from '../lib/services/contentGenerationService';
@@ -400,12 +400,12 @@ ${feedbacks.length > 0 ? feedbacks.map(f => `- ${f.presetFeedback || f.customFee
             <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-6 flex items-center justify-center">
               <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500 mr-3"></div>
               <div>
-                <span className="text-sm font-medium text-gray-700">AI 正在分析你的创作...</span>
-                <p className="text-xs text-gray-500 mt-1">这可能需要几分钟时间</p>
+                <span className="text-sm font-medium text-gray-800">AI 正在分析你的创作...</span>
+                <p className="text-xs text-gray-600 mt-1">这可能需要几分钟时间</p>
               </div>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-700 leading-relaxed hover:shadow-soft-md transition-shadow duration-300">
+            <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 text-sm text-gray-800 font-medium leading-relaxed hover:shadow-soft-md transition-shadow duration-300">
               {aiSummary || "暂无创作记录，开始创作吧！"}
             </div>
           )}

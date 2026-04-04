@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Zap } from 'lucide-react';
 
 export interface TopBarProps {
   title: string;
@@ -33,12 +33,17 @@ export default function TopBar({ title, showIcon = false, showBackButton = false
               <ArrowLeft className="w-5 h-5 text-gray-700" />
             </button>
           )}
-          {showIcon && (
+          {showLogo && (
+            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-500 rounded-full flex items-center justify-center shadow-md">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+          )}
+          {showIcon && !showLogo && (
             <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
           )}
-          <h1 className={`font-bold text-gray-800 ${showLogo ? 'text-2xl bg-gradient-to-r from-red-500 to-rose-500 bg-clip-text text-transparent' : 'text-lg'}`}>{title}</h1>
+          <h1 className={`font-bold ${showLogo ? 'text-2xl bg-gradient-to-r from-red-500 to-rose-500 bg-clip-text text-transparent' : 'text-lg text-gray-800'}`}>{title}</h1>
         </div>
         <div className="flex items-center gap-2">
           {/* 可以添加右侧的操作按钮，比如通知、设置等 */}

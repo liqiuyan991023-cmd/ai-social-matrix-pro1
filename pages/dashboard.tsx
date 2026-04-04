@@ -84,12 +84,20 @@ export default function DashboardPage() {
       const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
       if (url && url.startsWith('http')) {
         window.open(url, '_blank', 'noopener,noreferrer');
+        return; // 成功打开后返回
       }
+
+      // 如果没有有效的URL，显示提示
+      alert('正在获取爆款内容，请稍后再试...');
     } catch (error) {
       console.error('Topic click error:', error);
       // 即使统计失败，仍然尝试打开链接
       const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
+      if (url && url.startsWith('http')) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        alert('内容加载中，请稍后再试...');
+      }
     }
   };
 
@@ -106,7 +114,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      <TopBar title="RedSpark" showIcon={true} />
+      <TopBar title="RedSpark" showLogo={true} />
       
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Greeting */}

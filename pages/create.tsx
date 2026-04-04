@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { PenSquare, Copy, Check, Sparkles, MessageSquarePlus, ArrowLeft, Loader2, User, RefreshCw } from 'lucide-react';
+import { PenSquare, Copy, Check, Sparkles, MessageSquarePlus, Loader2, User, RefreshCw, AlertCircle } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import { ContentGenerationService } from "../lib/services/contentGenerationService";
@@ -66,7 +66,7 @@ export default function CreatePage() {
       if (!userProfile) {
         await fetchUserProfile(userId);
         if (!userProfile) {
-          throw new Error('用户画像加载失败');
+          throw new Error('用户画像加载失败，请重新设置人设画像');
         }
       }
 
@@ -81,7 +81,8 @@ export default function CreatePage() {
       });
 
       if (!response.ok) {
-        throw new Error('内容生成失败，请重试');
+        const errorData = await response.json();
+        throw new Error(errorData.error || '内容生成失败，请重试');
       }
 
       // 处理流式响应
@@ -131,7 +132,15 @@ export default function CreatePage() {
 
     } catch (error) {
       console.error('Content generation error:', error);
-      alert(error instanceof Error ? error.message : '内容生成失败，请检查网络连接或稍后重试');
+
+      // 针对不同错误给出不同提示
+      if (error instanceof Error && error.message.includes('用户画像')) {
+        if (confirm('用户画像加载失败，是否前往设置人设画像？')) {
+          router.push('/onboarding');
+        }
+      } else {
+        alert(error instanceof Error ? error.message : '内容生成失败，请检查网络连接或稍后重试');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -181,11 +190,11 @@ export default function CreatePage() {
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center gap-2 text-white font-medium">
-                    <Loader2 className="w-4 h-4 animate-spin" /> AI 爆发灵感中...
+                    <Loader2 className="w-4 h-4 animate-spin text-white" /> AI 爆发灵感中...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2 text-white font-semibold">
-                    <Sparkles className="w-4 h-4" /> 一键生成笔记
+                    <Sparkles className="w-4 h-4 text-white" /> 一键生成笔记
                   </span>
                 )}
               </button>

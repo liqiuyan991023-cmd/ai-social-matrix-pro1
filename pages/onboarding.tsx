@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import useSWR, { mutate } from "swr";
-import { Sparkles, Target, User } from 'lucide-react';
+import { Sparkles, User, CheckCircle2 } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
 import PersonaDisplay from "../components/onboarding/PersonaDisplay";
@@ -387,9 +387,7 @@ export default function OnboardingPage() {
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6 animate-fade-in">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <CheckCircle2 className="h-4 w-4 text-white" />
                 </div>
                 <h3 className="font-semibold text-green-800">你的人设画像设置成功！</h3>
               </div>
