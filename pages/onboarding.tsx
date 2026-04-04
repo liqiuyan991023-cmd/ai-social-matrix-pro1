@@ -123,13 +123,14 @@ export default function OnboardingPage() {
     }
   };
   
-  const { data: personaData, isLoading: personaLoading } = useSWR(
+  const { data: personaData, isLoading: personaLoading, mutate: mutatePersona } = useSWR(
     userId && !profileCreated ? `/api/user/profile?userId=${userId}` : null,
     async (url: string) => {
       const response = await fetch(url);
       if (!response.ok) return null;
       return response.json();
-    }
+    },
+    { revalidateOnFocus: false, shouldRetryOnError: false }
   );
   
   const handleSubmit = async (e: React.FormEvent) => {

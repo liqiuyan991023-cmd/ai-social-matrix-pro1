@@ -32,7 +32,12 @@ export default function DashboardPage() {
         throw new Error('Failed to fetch hot topics');
       }
       const result = await response.json();
-      setHotTopics(result.data);
+      // 确保result.data存在且是数组
+      if (result.data && Array.isArray(result.data)) {
+        setHotTopics(result.data);
+      } else {
+        throw new Error('Invalid data format');
+      }
     } catch (error) {
       console.error('Error fetching hot topics:', error);
       // API调用失败时设置一些默认的热门话题
