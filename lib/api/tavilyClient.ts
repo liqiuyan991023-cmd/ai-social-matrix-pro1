@@ -30,6 +30,15 @@ export interface FetchOptions {
   refresh?: boolean;
 }
 
+interface ErrorResponse {
+  success: false;
+  error: string;
+  message: string;
+  data: HotTopic[];
+  source: 'fallback';
+  timestamp: string;
+}
+
 class TavilyApiClient {
   private client: AxiosInstance;
   private cache: Map<string, { data: ApiResponse; timestamp: number }>;
@@ -278,5 +287,3 @@ class TavilyApiClient {
 // 导出单例实例
 export const tavilyClient = new TavilyApiClient();
 
-// 导出类型（内部使用）
-export type { HotTopic, ApiResponse, FetchOptions, ErrorResponse } from './types';

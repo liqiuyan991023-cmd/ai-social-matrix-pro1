@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { Sparkles, TrendingUp, ChevronRight, Zap, Target, Home, User, PenSquare, History, Loader2, AlertCircle } from 'lucide-react';
+import { TrendingUp, ChevronRight, Zap, Target, Loader2, AlertCircle } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
-import { tavilyClient, ApiResponse, HotTopic } from '../lib/api/tavilyClient';
+import { tavilyClient } from '../lib/api/tavilyClient';
+import type { HotTopic, ApiResponse } from '../lib/api/tavilyClient';
 
 export default function DashboardPage() {
   const router = useRouter();
