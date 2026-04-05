@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { Sparkles, TrendingUp, ChevronRight, Zap, Target, Home, User, PenSquare, History, Loader2 } from 'lucide-react';
+import { Sparkles, TrendingUp, ChevronRight, Zap, Target, Home, User, PenSquare, History, Loader2, AlertCircle } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
+import { tavilyClient, ApiResponse, HotTopic } from '../lib/api/tavilyClient';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [hotTopics, setHotTopics] = useState<any[]>([]);
+  const [hotTopics, setHotTopics] = useState<HotTopic[]>([]);
   const [isLoadingHotTopics, setIsLoadingHotTopics] = useState(false);
+  const [hotTopicsError, setHotTopicsError] = useState<string | null>(null);
 
   useEffect(() => {
     // 检查是否有 userId 存储
@@ -19,33 +21,54 @@ export default function DashboardPage() {
     }
     setUserId(storedUserId);
 
-    // 获取热点话题 - 使用正确的分类参数
+    // 获取热点话题
     fetchHotTopics();
   }, [router]);
 
-  const fetchHotTopics = async () => {
+  const fetchHotTopics = useCallback(async (refresh = false) => {
     setIsLoadingHotTopics(true);
+    setHotTopicsError(null);
+
     try {
-      // 使用新的API端点获取热点话题
-      const response = await fetch('/api/content/hot-topics');
-      if (!response.ok) {
-        throw new Error('Failed to fetch hot topics');
-      }
-      const result = await response.json();
-      // 确保result.data存在且是数组
-      if (result.data && Array.isArray(result.data)) {
-        setHotTopics(result.data);
+      console.log('[Dashboard] Fetching hot topics', { refresh });
+
+      const response: ApiResponse = await tavilyClient.fetchHotIdeas({
+        query: '小红书热门话题 2026年趋势',
+        category: undefined,
+        maxResults: 6,
+        refresh
+      });
+
+      if (response.success && response.data && Array.isArray(response.data)) {
+        setHotTopics(response.data);
+        console.log('[Dashboard] Hot topics loaded successfully', {
+          count: response.data.length,
+          source: response.source,
+          cached: response.cached
+        });
       } else {
-        throw new Error('Invalid data format');
+        throw new Error(response.message || 'Invalid data format');
       }
-    } catch (error) {
-      console.error('Error fetching hot topics:', error);
-      // API调用失败时设置一些默认的热门话题
-      setHotTopics(getDefaultHotTopics());
+    } catch (error: any) {
+      console.error('[Dashboard] Error fetching hot topics:', error);
+
+      const errorMessage = error.message || '获取热点话题失败';
+      setHotTopicsError(errorMessage);
+
+      // 获取失败时使用默认数据
+      const defaultTopics = getDefaultHotTopics();
+      setHotTopics(defaultTopics);
     } finally {
       setIsLoadingHotTopics(false);
     }
-  };
+  }, []);
+
+  // 添加错误边界效果
+  useEffect(() => {
+    if (hotTopicsError) {
+      console.warn('[Dashboard] Hot topics error state:', hotTopicsError);
+    }
+  }, [hotTopicsError]);
 
   // 默认热点话题（当API调用失败时使用）
   const getDefaultHotTopics = () => {
@@ -102,7 +125,7 @@ export default function DashboardPage() {
   };
 
   const handleRefreshHotTopics = async () => {
-    await fetchHotTopics();
+    await fetchHotTopics(true);
   };
 
   // 处理话题点击
@@ -190,10 +213,11 @@ export default function DashboardPage() {
               <TrendingUp className="w-5 h-5 text-orange-500" />
               <h3 className="font-semibold text-base">近期爆款灵感</h3>
             </div>
-            <button 
+            <button
               onClick={handleRefreshHotTopics}
               disabled={isLoadingHotTopics}
               className="text-xs text-gray-600 cursor-pointer hover:text-red-500 transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="换一批热点话题"
             >
               {isLoadingHotTopics ? (
                 <>
@@ -208,8 +232,8 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {isLoadingHotTopics ? (
               // 加载状态
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 animate-pulse">
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 animate-pulse">
                   <div className="space-y-2">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                     <div className="flex items-center gap-2">
@@ -219,11 +243,28 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))
+            ) : hotTopicsError ? (
+              // 错误状态
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-red-700">{hotTopicsError}</p>
+                    <p className="text-xs text-red-600 mt-1">已显示默认话题</p>
+                  </div>
+                  <button
+                    onClick={handleRefreshHotTopics}
+                    className="text-xs text-red-600 hover:text-red-700 underline"
+                  >
+                    重试
+                  </button>
+                </div>
+              </div>
             ) : hotTopics.length > 0 ? (
               // 显示热点话题
               hotTopics.map((item, i) => (
                 <div
-                  key={i}
+                  key={`${item.title}-${i}`}
                   onClick={() => handleTopicClick(item)}
                   className="w-full bg-white rounded-xl shadow-card border border-gray-200 p-4 flex items-center justify-between hover:shadow-card-hover hover:border-primary transition-all duration-300 cursor-pointer"
                 >
@@ -242,7 +283,16 @@ export default function DashboardPage() {
             ) : (
               // 无数据状态
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-                <p className="text-gray-600">暂无热点灵感，点击"换一批"试试</p>
+                <div className="flex flex-col items-center gap-2">
+                  <AlertCircle className="w-6 h-6 text-gray-400" />
+                  <p className="text-gray-600">暂无热点灵感</p>
+                  <button
+                    onClick={handleRefreshHotTopics}
+                    className="text-xs text-red-500 hover:text-red-600 underline mt-1"
+                  >
+                    点击"换一批"重试
+                  </button>
+                </div>
               </div>
             )}
           </div>
