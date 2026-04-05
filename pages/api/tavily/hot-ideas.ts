@@ -14,8 +14,14 @@ const logApiCall = (level: string, message: string, data?: any) => {
 };
 
 // 配置常量
-const TAVILY_API_URL = process.env.TAVILY_API_URL || 'https://api.tavily.com/v1';
+const TAVILY_API_URL = process.env.TAVILY_API_URL || 'https://api.tavily.com';
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+
+// 调试日志
+console.log('[TAVILY-API] Initializing with:', {
+  TAVILY_API_URL,
+  TAVILY_API_KEY: TAVILY_API_KEY ? `SET (length: ${TAVILY_API_KEY.length})` : 'NOT SET'
+});
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   process.env.NEXT_PUBLIC_APP_URL,
@@ -35,13 +41,17 @@ const setCorsHeaders = (res: NextApiResponse, origin: string) => {
 // 验证API密钥
 const validateApiKey = (): { valid: boolean; error?: string } => {
   if (!TAVILY_API_KEY) {
+    console.error('[TAVILY-API] TAVILY_API_KEY is undefined or empty');
     return {
       valid: false,
       error: 'TAVILY_API_KEY is not configured in environment variables'
     };
   }
 
+  console.log('[TAVILY-API] TAVILY_API_KEY found, length:', TAVILY_API_KEY.length);
+
   if (TAVILY_API_KEY.length < 20) {
+    console.error('[TAVILY-API] TAVILY_API_KEY appears to be invalid (too short)');
     return {
       valid: false,
       error: 'TAVILY_API_KEY appears to be invalid (too short)'
@@ -98,43 +108,52 @@ const getDefaultHotTopics = (): any[] => [
 
 // 主处理函数
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 处理OPTIONS预检请求
-  if (req.method === 'OPTIONS') {
+  try {
+    // 处理OPTIONS预检请求
+    if (req.method === 'OPTIONS') {
+      const origin = req.headers.origin || req.headers.referer || '';
+      setCorsHeaders(res, origin);
+      return res.status(204).end();
+    }
+
+    // 只允许GET和POST方法
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      logApiCall('error', 'Invalid request method', { method: req.method });
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed',
+        message: 'Only GET and POST methods are supported'
+      });
+    }
+
+    // 设置CORS头
     const origin = req.headers.origin || req.headers.referer || '';
     setCorsHeaders(res, origin);
-    return res.status(204).end();
-  }
-
-  // 只允许GET和POST方法
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    logApiCall('error', 'Invalid request method', { method: req.method });
-    return res.status(405).json({
-      success: false,
-      error: 'Method not allowed',
-      message: 'Only GET and POST methods are supported'
-    });
-  }
-
-  // 设置CORS头
-  const origin = req.headers.origin || req.headers.referer || '';
-  setCorsHeaders(res, origin);
 
   // 验证API密钥
-  const apiKeyValidation = validateApiKey();
-  if (!apiKeyValidation.valid) {
-    logApiCall('error', 'API key validation failed', { error: apiKeyValidation.error });
-    return res.status(500).json({
-      success: false,
-      error: 'API Configuration Error',
-      message: apiKeyValidation.error,
-      data: getDefaultHotTopics()
-    });
-  }
+    const apiKeyValidation = validateApiKey();
+    if (!apiKeyValidation.valid) {
+      logApiCall('error', 'API key validation failed', { error: apiKeyValidation.error });
+      return res.status(500).json({
+        success: false,
+        error: 'API Configuration Error',
+        message: apiKeyValidation.error,
+        data: getDefaultHotTopics()
+      });
+    }
 
-  try {
     // 解析请求参数
     const requestData = req.method === 'GET' ? req.query : req.body;
     const { query = '小红书热门话题 2026年趋势', category, maxResults = 6 } = requestData;
+
+    // 验证参数
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid Parameter',
+        message: 'Query parameter is required and must be a string'
+      });
+    }
 
     logApiCall('info', 'Incoming request', {
       method: req.method,
@@ -169,18 +188,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       params.category = category as string;
     }
 
+    console.log('[TAVILY-API] Request params:', {
+      ...params,
+      api_key: params.api_key ? 'SET' : 'NOT SET' // 不打印完整的密钥
+    });
+
     // 调用Tavily API
     logApiCall('info', 'Calling Tavily API', { url: `${TAVILY_API_URL}/search`, params });
 
     const startTime = Date.now();
-    const response = await axios.get(`${TAVILY_API_URL}/search`, {
-      params,
-      timeout: 10000, // 10秒超时
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'RedSpark-Tavily-Proxy/1.0'
+    let response;
+
+    try {
+      // 尝试使用POST方法（Tavily API推荐）
+      response = await axios.post(`${TAVILY_API_URL}/search`, params, {
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'RedSpark-Tavily-Proxy/1.0'
+        }
+      });
+    } catch (postError: any) {
+      // 如果POST失败且是405错误，尝试GET方法
+      if (postError.response?.status === 405) {
+        console.log('[TAVILY-API] POST method not allowed, trying GET method');
+        try {
+          response = await axios.get(`${TAVILY_API_URL}/search`, {
+            params,
+            timeout: 10000,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'RedSpark-Tavily-Proxy/1.0'
+            }
+          });
+        } catch (getError: any) {
+          // 如果GET也失败，抛出POST的错误
+          throw postError;
+        }
+      } else {
+        throw postError;
       }
-    });
+    }
     const queryTime = Date.now() - startTime;
 
     // 处理API响应

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
-import { TrendingUp, ChevronRight, Zap, Target, Loader2, AlertCircle } from 'lucide-react';
+import { TrendingUp, ChevronRight, Zap, Target, Loader2, AlertCircle, Home, User, PenSquare, History } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import BottomNav from '../components/BottomNav';
 import { tavilyClient } from '../lib/api/tavilyClient';
@@ -40,6 +40,8 @@ export default function DashboardPage() {
         refresh
       });
 
+      console.log('[Dashboard] API Response:', response);
+
       if (response.success && response.data && Array.isArray(response.data)) {
         setHotTopics(response.data);
         console.log('[Dashboard] Hot topics loaded successfully', {
@@ -47,6 +49,8 @@ export default function DashboardPage() {
           source: response.source,
           cached: response.cached
         });
+        // 清除错误状态
+        setHotTopicsError(null);
       } else {
         throw new Error(response.message || 'Invalid data format');
       }
@@ -126,6 +130,7 @@ export default function DashboardPage() {
   };
 
   const handleRefreshHotTopics = async () => {
+    console.log('[Dashboard] Refresh button clicked');
     await fetchHotTopics(true);
   };
 
