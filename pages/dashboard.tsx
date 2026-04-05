@@ -110,11 +110,21 @@ export default function DashboardPage() {
     const url = topic.url || `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(topic.title)}`;
     if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
       try {
-        // 在新窗口打开链接
-        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-        if (newWindow) {
-          newWindow.focus();
-        }
+        // 在新标签页打开链接（更可靠的方式）
+        window.open(url, '_blank', 'noopener,noreferrer');
+        
+        // 同时在当前页面显示提示
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
+        notification.textContent = `正在打开 ${topic.title} 的搜索结果...`;
+        document.body.appendChild(notification);
+        
+        // 3秒后移除提示
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 3000);
 
         // 后台埋点统计，不阻塞页面跳转
         await fetch('/api/content/topics', {
@@ -124,6 +134,8 @@ export default function DashboardPage() {
         });
       } catch (err) {
         console.error('Topic click tracking failed:', err);
+        // 如果新窗口被阻止，显示错误信息
+        alert(`无法打开链接。请允许弹出窗口，或手动搜索：${topic.title}`);
       }
       return;
     }

@@ -116,6 +116,7 @@ export default function OnboardingPage() {
         // 保存创作人格到localStorage
         const creativePersona = {
           userId: userId,
+          personaSummary: data.summary || '基于你的特点，我为你打造了专属创作风格',
           personality: data.summary || '基于你的特点，我为你打造了专属创作风格',
           generatedAt: new Date().toISOString()
         };
@@ -124,6 +125,7 @@ export default function OnboardingPage() {
         // 如果API调用失败，仍然保存默认的创作人格
         const defaultPersona = {
           userId: userId,
+          personaSummary: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。你的优势在于${profile.interests.split(',')[0] || '生活经验丰富'}，建议重点关注${profile.contentGoals.join('/')}{${profile.contentStyle}的表达方式，这样最容易引起目标受众的共鸣。`,
           personality: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。你的优势在于${profile.interests.split(',')[0] || '生活经验丰富'}，建议重点关注${profile.contentGoals.join('/')}{${profile.contentStyle}的表达方式，这样最容易引起目标受众的共鸣。`,
           generatedAt: new Date().toISOString()
         };
@@ -489,12 +491,24 @@ export default function OnboardingPage() {
                 </p>
               </div>
               
-              {personaData?.profile?.creativePersona && (
-                <PersonaDisplay
-                  persona={personaData.profile.creativePersona}
-                  onEdit={() => setShowConfirmDialog(true)}
-                />
-              )}
+              {(() => {
+                try {
+                  const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                  if (savedPersona) {
+                    const personaData = JSON.parse(savedPersona);
+                    return (
+                      <PersonaDisplay
+                        persona={personaData}
+                        onEdit={() => setShowConfirmDialog(true)}
+                      />
+                    );
+                  }
+                  return null;
+                } catch (error) {
+                  console.error('Error loading creative persona:', error);
+                  return null;
+                }
+              })()}
             </div>
 
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
