@@ -154,30 +154,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // 准备Tavily API请求
-    const searchParams = new URLSearchParams({
-      api_key: TAVILY_API_KEY,
+    // 准备Tavily API请求参数
+    const params: Record<string, string> = {
+      api_key: TAVILY_API_KEY!,
       query: query as string,
       max_results: maxResults.toString(),
-      include_domains: ['xiaohongshu.com', 'weibo.com', 'zhihu.com', 'douban.com'].join(','),
       search_depth: 'advanced'
-    });
+    };
+
+    // 添加域名过滤（Tavily API支持domains参数）
+    params.domains = ['xiaohongshu.com', 'weibo.com', 'zhihu.com', 'douban.com'].join(',');
 
     if (category) {
-      searchParams.append('category', category as string);
+      params.category = category as string;
     }
 
     // 调用Tavily API
-    logApiCall('info', 'Calling Tavily API', { url: `${TAVILY_API_URL}/search`, params: searchParams.toString() });
+    logApiCall('info', 'Calling Tavily API', { url: `${TAVILY_API_URL}/search`, params });
 
+    const startTime = Date.now();
     const response = await axios.get(`${TAVILY_API_URL}/search`, {
-      params: searchParams,
+      params,
       timeout: 10000, // 10秒超时
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'RedSpark-Tavily-Proxy/1.0'
       }
     });
+    const queryTime = Date.now() - startTime;
 
     // 处理API响应
     if (response.data && Array.isArray(response.data.results)) {
@@ -194,7 +198,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logApiCall('info', 'Tavily API call successful', {
         resultCount: results.length,
         topicsReturned: hotTopics.length,
-        queryTime: response.duration
+        queryTime
       });
 
       return res.status(200).json({
@@ -205,7 +209,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         timestamp: new Date().toISOString(),
         meta: {
           totalResults: results.length,
-          queryTime: response.duration,
+          queryTime,
           category: category || 'general'
         }
       });
