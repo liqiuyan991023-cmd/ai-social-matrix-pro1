@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
-import useSWR, { mutate } from "swr";
 import { Sparkles, User, CheckCircle2 } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
-import PersonaDisplay from "../components/onboarding/PersonaDisplay";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -23,8 +21,39 @@ export default function OnboardingPage() {
     preferredLength: ''
   });
   
+  // 使用新的generate-persona API生成创作人格
+  const generatePersona = async (userInput: string): Promise<any> => {
+    try {
+      const response = await fetch('/api/generate-persona', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userInput: userInput
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || '生成创作人格失败');
+      }
+
+      if (!data.success || !data.data) {
+        throw new Error('API返回数据格式不正确');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Error generating persona:', error);
+      throw error;
+    }
+  };
+
   const createProfile = async (data: any) => {
     setIsLoading(true);
+    setApiError(null);
     try {
       // 处理数据格式
       let contentPreferences = [...data.contentPreference];
@@ -37,15 +66,30 @@ export default function OnboardingPage() {
         contentStyles.push(data.customContentStyle);
       }
 
+      const userInput = `年龄范围：${data.ageRange}
+职业：${data.profession}
+兴趣：${data.interests}
+内容偏好：${contentPreferences.join(', ')}
+表达风格：${contentStyles.join(', ')}
+内容长度：${data.preferredLength}`;
+
+      // 调用新的generate-persona API生成创作人格
+      const personaData = await generatePersona(userInput);
+
+      // 处理API返回的数据格式
       const processedData = {
         userId,
-        ageRange: data.ageRange,
-        profession: data.profession,
-        interests: data.interests.split(',').map((i: string) => i.trim()),
-        expertise: data.interests.split(',').map((i: string) => i.trim()), // 使用兴趣作为专长
-        contentGoals: contentPreferences,
-        contentStyle: contentStyles.join(', '),
-        preferredLength: data.preferredLength
+        ageRange: personaData.ageRange || data.ageRange,
+        profession: personaData.profession || data.profession,
+        interests: personaData.interests || data.interests.split(',').map((i: string) => i.trim()),
+        expertise: personaData.interests || data.interests.split(',').map((i: string) => i.trim()),
+        contentGoals: personaData.contentGoals || contentPreferences,
+        contentStyle: personaData.contentStyle || contentStyles.join(', '),
+        preferredLength: personaData.preferredLength || data.preferredLength,
+        creativePersona: {
+          personality: personaData.personality,
+          generatedAt: new Date().toISOString()
+        }
       };
 
       const response = await fetch("/api/user/profile", {
@@ -63,96 +107,26 @@ export default function OnboardingPage() {
       localStorage.setItem('userId', userId);
       // 存储用户画像到localStorage
       localStorage.setItem(`userProfile_${userId}`, JSON.stringify(result.profile));
-      
-      // 调用AI生成创作人格总结，并等待完成
-      await generateCreativePersona(result.profile);
-      
+      // 保存AI生成的创作人格到localStorage
+      localStorage.setItem(`creativePersona_${userId}`, JSON.stringify({
+        userId: userId,
+        personality: personaData.personality,
+        generatedAt: new Date().toISOString()
+      }));
+
       // 设置成功状态并停止加载
       setProfileCreated(true);
       setIsLoading(false);
-      
-      // 手动刷新persona数据
-      mutatePersona();
 
       return result;
     } catch (error) {
       console.error("Error creating profile:", error);
-      alert("创建画像失败，请重试");
+      alert(error instanceof Error ? error.message : '创建画像失败，请重试');
       setIsLoading(false);
       throw error;
     }
   };
 
-  // 生成创作人格总结
-  const generateCreativePersona = async (profile: any): Promise<void> => {
-    try {
-      const prompt = `基于以下用户信息生成一个详细的创作人格画像：
-
-用户基本信息：
-- 年龄范围：${profile.ageRange}
-- 职业：${profile.profession}
-- 兴趣：${profile.interests.join(', ')}
-- 内容目标：${profile.contentGoals.join(', ')}
-- 表达风格：${profile.contentStyle}
-- 内容长度偏好：${profile.preferredLength}
-
-请生成一个详细的创作人格画像，包含：
-1. 创作者人设描述
-2. 适合的内容类型和主题
-3. 表达风格特点
-4. 受众群体分析
-5. 内容创作建议
-
-请用友好的语气输出，让用户感受到AI的个性化关怀。`;
-
-      const response = await fetch('/api/content/summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // 保存创作人格到localStorage
-        const creativePersona = {
-          userId: userId,
-          personaSummary: data.summary || '基于你的特点，我为你打造了专属创作风格',
-          personality: data.summary || '基于你的特点，我为你打造了专属创作风格',
-          generatedAt: new Date().toISOString()
-        };
-        localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(creativePersona));
-      } else {
-        // 如果API调用失败，仍然保存默认的创作人格
-        const defaultPersona = {
-          userId: userId,
-          personaSummary: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。你的优势在于${profile.interests.split(',')[0] || '生活经验丰富'}，建议重点关注${profile.contentGoals.join('/')}{${profile.contentStyle}的表达方式，这样最容易引起目标受众的共鸣。`,
-          personality: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。你的优势在于${profile.interests.split(',')[0] || '生活经验丰富'}，建议重点关注${profile.contentGoals.join('/')}{${profile.contentStyle}的表达方式，这样最容易引起目标受众的共鸣。`,
-          generatedAt: new Date().toISOString()
-        };
-        localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(defaultPersona));
-      }
-    } catch (error) {
-      console.error('Error generating creative persona:', error);
-      // 即使生成失败，也保存默认的创作人格，避免数据缺失
-      const defaultPersona = {
-        userId: userId,
-        personality: `基于你的个人特点（${profile.profession}${profile.ageRange}），我为你定制了专属的创作风格。建议重点关注内容质量和用户互动，这是小红书平台成功的关键。`,
-        generatedAt: new Date().toISOString()
-      };
-      localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(defaultPersona));
-    }
-  };
-  
-  const { data: personaData, isLoading: personaLoading, mutate: mutatePersona } = useSWR(
-    userId ? `/api/user/profile?userId=${userId}` : null,
-    async (url: string) => {
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      return response.json();
-    },
-    { revalidateOnFocus: false, shouldRetryOnError: false, refreshInterval: profileCreated ? 1000 : 0 }
-  );
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasContentPreference = formData.contentPreference.length > 0 || formData.customContentPreference;
@@ -178,8 +152,7 @@ export default function OnboardingPage() {
       customContentStyle: '',
       preferredLength: ''
     });
-    // 清除 SWR 缓存和localStorage中的创作人格数据
-    mutate(`/api/user/profile?userId=${userId}`, null);
+    // 清除localStorage中的创作人格数据
     localStorage.removeItem(`creativePersona_${userId}`);
     setProfileCreated(false);
   };
@@ -205,7 +178,7 @@ export default function OnboardingPage() {
       <TopBar title="人设诊断" showIcon={false} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {!profileCreated && !personaData?.profile ? (
+        {!profileCreated ? (
           <div className="space-y-8">
             <div className="flex flex-col items-center justify-center py-8 animate-fade-in">
               <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-soft-lg animate-pulse-soft">
@@ -539,11 +512,59 @@ export default function OnboardingPage() {
               <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新设置人设画像</p>
             </div>
 
-            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <PersonaDisplay
-                persona={personaData.profile.creativePersona}
-                onEdit={() => setShowConfirmDialog(true)}
-              />
+            {/* 显示完整的创作人格总结 - 支持滚动和自动换行 */}
+            <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in mb-6" style={{ animationDelay: '100ms' }}>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">你的创作人格画像</h3>
+              <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
+                <div className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 leading-relaxed break-words">
+                  {((): string => {
+                    try {
+                      const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                      if (savedPersona) {
+                        const personaData = JSON.parse(savedPersona);
+                        return personaData.personality || '基于你的特点，AI正在为你打造专属创作风格...';
+                      }
+                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                    } catch (error) {
+                      console.error('Error loading creative persona:', error);
+                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                    }
+                  })()}
+                </div>
+              </div>
+
+              {/* 核心维度展示 - 清理冗余，只保留核心信息 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">性格特点</h4>
+                  <div className="max-h-32 overflow-y-auto text-sm text-gray-700 leading-relaxed break-words">
+                    {((): string => {
+                      try {
+                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                        if (savedPersona) {
+                          const personaData = JSON.parse(savedPersona);
+                          return personaData.personality || '基于你的特点，AI正在为你打造专属创作风格...';
+                        }
+                        return '基于你的特点，AI正在为你打造专属创作风格...';
+                      } catch (error) {
+                        console.error('Error loading creative persona:', error);
+                        return '基于你的特点，AI正在为你打造专属创作风格...';
+                      }
+                    })()}
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">创作优势</h4>
+                  <div className="text-sm text-gray-700">
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>个性化表达风格</li>
+                      <li>精准的内容定位</li>
+                      <li>独特创作视角</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
