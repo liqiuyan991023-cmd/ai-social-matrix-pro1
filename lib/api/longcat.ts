@@ -1,28 +1,118 @@
 import axios from 'axios';
 
-// Real implementation that calls LongCat API
+// Real implementation that calls LLM API (OpenAI/ZhiPu/LongCat)
 export async function callLongCatAPI(prompt: string, options: any = {}): Promise<string> {
+  const apiUrl = process.env.ZHIPU_API_URL || process.env.OPENAI_API_URL || process.env.LONGCAT_API_URL;
+  const apiKey = process.env.ZHIPU_API_KEY || process.env.OPENAI_API_KEY || process.env.LONGCAT_API_KEY;
+
+  // Determine which API we're using
+  const usingZhiPu = !!process.env.ZHIPU_API_KEY;
+  const usingOpenAI = !!process.env.OPENAI_API_KEY && !usingZhiPu;
+
+  // Log for diagnostics
+  console.log('[callLongCatAPI] API Configuration Check:', {
+    urlSet: !!apiUrl,
+    keySet: !!apiKey,
+    keyLength: apiKey?.length || 0,
+    usingZhiPu,
+    usingOpenAI
+  });
+
+  // Validate environment variables
+  if (!apiUrl || !apiKey) {
+    console.error('[callLongCatAPI] ❌ CRITICAL: Missing API configuration!', {
+      ZHIPU_API_URL: process.env.ZHIPU_API_URL ? '✓ SET' : '❌ NOT SET',
+      ZHIPU_API_KEY: process.env.ZHIPU_API_KEY ? '✓ SET' : '❌ NOT SET',
+      OPENAI_API_URL: process.env.OPENAI_API_URL ? '✓ SET (fallback)' : '❌ NOT SET',
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✓ SET (fallback)' : '❌ NOT SET',
+      LONGCAT_API_URL: process.env.LONGCAT_API_URL ? '✓ SET (fallback)' : '❌ NOT SET',
+      LONGCAT_API_KEY: process.env.LONGCAT_API_KEY ? '✓ SET (fallback)' : '❌ NOT SET',
+      message: 'Please set ZHIPU_API_KEY (recommended) or OPENAI_API_KEY in .env.local'
+    });
+    // Fallback to mock response if API key is not configured
+    console.warn('[callLongCatAPI] Using MOCK response due to missing API configuration');
+    return getMockResponse(prompt);
+  }
+
   try {
-    const response = await axios.post(
-      `${process.env.LONGCAT_API_URL}/completions`,
-      {
+    console.log('[callLongCatAPI] 🔄 Calling API at:', apiUrl, `(using ${usingZhiPu ? 'ZhiPu' : usingOpenAI ? 'OpenAI' : 'LongCat'} API)`);
+
+    let requestBody: any;
+    let endpoint: string;
+
+    if (usingZhiPu) {
+      // ZhiPu AI uses chat completions format
+      endpoint = `${apiUrl}/chat/completions`;
+      requestBody = {
+        model: options.model || 'glm-4',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: options.max_tokens || 1000,
+        temperature: options.temperature || 0.7,
+        ...options
+      };
+    } else {
+      // OpenAI/LongCat use completions format
+      endpoint = `${apiUrl}/completions`;
+      requestBody = {
+        model: options.model || (usingOpenAI ? 'gpt-3.5-turbo-instruct' : undefined),
         prompt,
         max_tokens: options.max_tokens || 1000,
         temperature: options.temperature || 0.7,
         ...options
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.LONGCAT_API_KEY}`
-        }
-      }
-    );
+      };
+    }
 
-    return response.data.choices[0].text;
-  } catch (error) {
-    console.error('Error calling LongCat API:', error);
-    // Fallback to mock response if API call fails
+    const response = await axios.post(endpoint, requestBody, {
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey // ZhiPu uses api-key header
+      },
+      timeout: 30000 // 30 second timeout
+    });
+
+    console.log('[callLongCatAPI] ✅ SUCCESS: Got response from API');
+
+    let responseText: string;
+    if (usingZhiPu) {
+      // ZhiPu returns chat format
+      responseText = response.data.choices?.[0]?.message?.content || '';
+    } else {
+      // OpenAI/LongCat return completions format
+      responseText = response.data.choices?.[0]?.text || '';
+    }
+
+    if (responseText) {
+      return responseText;
+    } else {
+      console.warn('[callLongCatAPI] ⚠️  Unexpected response format:', response.data);
+      return getMockResponse(prompt);
+    }
+  } catch (error: any) {
+    console.error('[callLongCatAPI] ❌ FAILED: Error calling API:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
+
+    // Additional diagnostics for common errors
+    if (error.response?.status === 401) {
+      console.error('[callLongCatAPI] 🔐 Authentication Failed - Check API_KEY validity');
+    } else if (error.response?.status === 404) {
+      console.error('[callLongCatAPI] 🌐 API Endpoint Not Found - Check API_URL');
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('[callLongCatAPI] 📡 Connection Refused - API service may be down');
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      console.error('[callLongCatAPI] ⏱️  Request Timeout - API service may be slow or unreachable');
+    }
+
+    console.warn('[callLongCatAPI] ⚠️  Falling back to MOCK response');
     return getMockResponse(prompt);
   }
 }
