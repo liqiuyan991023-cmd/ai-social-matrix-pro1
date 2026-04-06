@@ -28,13 +28,20 @@ export default function ContentGenerator({ userId, topic, onComplete }: ContentG
     setError(null);
 
     try {
+      // 获取创作人格总结
+      const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
+      const personaData = storedPersona ? JSON.parse(storedPersona) : null;
+      const personaSummary = personaData?.personaSummary || personaData?.personality || '';
+
       const response = await fetch("/api/content/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
           topicId: topic.id,
-          regenerate: null
+          regenerate: null,
+          userInput: topic.title || '创作内容',
+          personaSummary: personaSummary
         }),
       });
 

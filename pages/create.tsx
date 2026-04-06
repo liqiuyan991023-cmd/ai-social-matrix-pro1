@@ -119,6 +119,11 @@ export default function CreatePage() {
         throw new Error('用户画像加载失败，请重新设置人设画像');
       }
 
+      // 获取创作人格总结
+      const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
+      const personaData = storedPersona ? JSON.parse(storedPersona) : null;
+      const personaSummary = personaData?.personaSummary || personaData?.personality || '';
+
       // 调用API生成内容
       const response = await fetch('/api/content/generate', {
         method: 'POST',
@@ -126,7 +131,9 @@ export default function CreatePage() {
         body: JSON.stringify({
           userId: userId,
           topicId: 'default_topic',
-          idea: idea
+          idea: idea,
+          userInput: idea,
+          personaSummary: personaSummary
         })
       });
 
@@ -320,7 +327,8 @@ export default function CreatePage() {
                 <h3 className="font-semibold text-base text-gray-800">生成成功！</h3>
               </div>
 
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 mb-6 p-4 bg-gray-50 rounded-xl">
+              {/* 修复内容截断问题：添加CSS支持滚动、自动换行 */}
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 mb-6 p-4 bg-gray-50 rounded-xl max-h-96 overflow-y-auto break-words">
                 {generatedContent}
               </div>
 
