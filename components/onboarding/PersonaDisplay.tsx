@@ -31,31 +31,13 @@ export default function PersonaDisplay({ persona, onEdit }: PersonaDisplayProps)
           </div>
         </div>
 
-        {/* 核心维度展示 - 清理冗余，只保留核心信息 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {creativePersona.personality && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <h4 className="text-xs font-medium text-gray-500 mb-1">性格特点</h4>
-              <p className="text-sm text-gray-700 leading-relaxed break-words">{creativePersona.personality}</p>
-            </div>
-          )}
-
-          {creativePersona.tone && (
-            <div className="bg-gray-50 rounded-lg p-3">
-              <h4 className="text-xs font-medium text-gray-500 mb-1">表达风格</h4>
-              <p className="text-sm text-gray-700 leading-relaxed break-words">{creativePersona.tone}</p>
-            </div>
-          )}
-
-          {creativePersona.uniqueAngle && (
-            <div className="bg-gray-50 rounded-lg p-3 md:col-span-2">
-              <h4 className="text-xs font-medium text-gray-500 mb-1">独特创作角度</h4>
-              <p className="text-sm text-gray-700 leading-relaxed break-words">{creativePersona.uniqueAngle}</p>
-            </div>
-          )}
+        {/* 只保留创作人格相关字段，移除性格特点等冗余信息 */}
+        <div className="bg-gray-50 rounded-lg p-3">
+          <h4 className="text-xs font-medium text-gray-500 mb-1">创作风格</h4>
+          <div className="max-h-32 overflow-y-auto text-sm text-gray-700 leading-relaxed break-words">
+            {creativePersona.contentStyle || '亲切自然'}
+          </div>
         </div>
-
-        {/* 清理冗余元素，移除重复的提示信息 */}
       </div>
     </div>
   );

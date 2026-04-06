@@ -46,7 +46,7 @@ const buildPersonaPrompt = (userInput: string): string => {
 ${userInput}
 
 【要求】
-请按照以下维度总结人物画像，结构清晰、无冗余：
+请严格按照以下8个维度总结人物画像，结构清晰、无冗余：
 
 1. 年龄范围：根据用户描述推断合适的年龄段
 2. 职业或主要身份：明确用户的职业或身份定位
@@ -65,17 +65,20 @@ ${userInput}
   "profession": "互联网产品经理",
   "interests": ["科技产品", "职场成长", "生活方式"],
   "contentStyle": "专业细致，亲切自然",
-  "contentGoals": ["分享专业知识", "记录成长历程", "帮助他人"],
+  "contentGoals": ["专业干货", "职场经验"],
   "preferredLength": "medium",
+  "creativeNeeds": "分享专业知识，帮助职场新人",
   "targetAudience": "职场新人，对科技感兴趣的年轻人",
-  "personality": "基于用户特点生成的详细创作人格描述，包含个性特点、创作优势、表达风格等，用友好的语气输出，让用户感受到AI的个性化关怀。"
+  "personaSummary": "基于用户特点生成的AI创作人格总结，包含创作者人设描述、适合的内容类型和主题、表达风格特点、受众群体分析、内容创作建议等，用友好的语气输出，让用户感受到AI的个性化关怀。"
 }
 
 【重要提醒】
 - 必须严格按照用户输入信息生成，不能添加或编造信息
-- personality字段需要详细的描述，至少100字
+- personaSummary字段需要详细的描述，至少100字，体现个性化关怀
 - 所有字段都必须填写，不能为空
-- 语言要友好自然，体现个性化关怀`;
+- 语言要友好自然，像是AI助手在和用户对话
+- interests字段必须是数组格式
+- contentGoals字段必须是数组格式`;
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -182,16 +185,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('[GENERATE-PERSONA-API] Failed to parse response as JSON:', parseError);
         console.log('[GENERATE-PERSONA-API] Raw response:', response);
 
-        // 如果解析失败，返回一个合理的默认响应
+        // 如果解析失败，基于用户输入生成一个合理的默认响应
+        // 解析用户输入的各个字段
+        const userLines = userInput.split('\n');
+        const userData: any = {};
+        userLines.forEach(line => {
+          const [key, value] = line.split('：');
+          if (key && value) {
+            userData[key.trim()] = value.trim();
+          }
+        });
+
         personaData = {
-          ageRange: '26-35岁',
-          profession: '互联网产品经理',
-          interests: ['科技产品', '职场成长', '生活方式'],
-          contentStyle: '专业细致，亲切自然',
-          contentGoals: ['分享专业知识', '记录成长历程'],
-          preferredLength: 'medium',
-          targetAudience: '职场新人，对科技感兴趣的年轻人',
-          personality: `基于你的个人特点（互联网产品经理、26-35岁），我为你定制了专属的创作风格。你的优势在于科技产品和职场成长，建议重点关注专业内容和职场经验，采用专业细致的表达方式，这样最容易引起目标受众的共鸣。`
+          ageRange: userData['年龄范围'] || '26-35岁',
+          profession: userData['职业'] || '创作者',
+          interests: userData['兴趣'] ? userData['兴趣'].split('，').map((i: string) => i.trim()) : ['生活分享'],
+          contentStyle: userData['表达风格'] || '亲切自然',
+          contentGoals: userData['内容偏好'] ? userData['内容偏好'].split('，').map((i: string) => i.trim()) : ['生活分享'],
+          preferredLength: userData['内容长度'] || 'medium',
+          creativeNeeds: userData['创作需求'] || '分享生活经验',
+          targetAudience: '对相关内容感兴趣的读者',
+          personaSummary: `基于你的个人特点（${userData['职业'] || '创作者'}${userData['年龄范围'] || ''}），我为你定制了专属的创作风格。你的优势在于${userData['兴趣'] || '内容创作'}，建议重点关注${userData['内容偏好'] || '生活分享'}，采用${userData['表达风格'] || '亲切自然'}的表达方式，这样最容易引起目标受众的共鸣。`
         };
       }
 
