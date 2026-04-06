@@ -209,6 +209,90 @@ export default function CreatePage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // 重新生成内容，基于反馈优化
+  const handleRegenerate = async (feedback: string) => {
+    if (!generatedContent) {
+      alert('没有可优化的内容');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
+      const personaData = storedPersona ? JSON.parse(storedPersona) : null;
+      const personaSummary = personaData?.personaSummary || personaData?.personality || '';
+
+      const response = await fetch('/api/content/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          topicId: 'default_topic',
+          idea: idea,
+          userInput: idea,
+          personaSummary: personaSummary,
+          regenerate: feedback
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '内容重新生成失败，请重试');
+      }
+
+      // 处理流式响应
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('无法读取响应数据');
+      }
+
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let generatedTitle = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+
+            try {
+              const stageData = JSON.parse(data);
+              if (stageData.stage === 'title') {
+                generatedTitle = stageData.content || '';
+              } else if (stageData.stage === 'content') {
+                fullContent = stageData.content || '';
+                setGeneratedContent(fullContent);
+              } else if (stageData.stage === 'keywords') {
+                setKeywords(stageData.content?.tags || []);
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE data:', e);
+            }
+          }
+        }
+      }
+
+      if (!fullContent) {
+        throw new Error('内容重新生成失败，请重试');
+      }
+
+      setHasResult(true);
+
+    } catch (error) {
+      console.error('Regeneration error:', error);
+      alert(error instanceof Error ? error.message : '内容重新生成失败，请检查网络连接或稍后重试');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (!userId || isLoadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -468,8 +552,8 @@ export default function CreatePage() {
                       <button
                         key={tag}
                         onClick={() => {
-                          // 应用微调的逻辑
-                          alert(`已应用微调：${tag}`);
+                          // 重新生成内容，基于当前内容优化
+                          handleRegenerate(tag);
                         }}
                         className="px-4 py-2 bg-white text-gray-700 rounded-full text-xs hover:bg-gradient-accent hover:text-white transition-all duration-300 border border-blue-100 hover:border-transparent shadow-soft-sm"
                       >
