@@ -3,11 +3,13 @@ import { useRouter } from "next/router";
 import { Sparkles, User, CheckCircle2 } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
+import PersonaDisplay from "../components/onboarding/PersonaDisplay";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
   const [formData, setFormData] = useState({
@@ -53,7 +55,6 @@ export default function OnboardingPage() {
 
   const createProfile = async (data: any) => {
     setIsLoading(true);
-    setApiError(null);
     try {
       // 处理数据格式
       let contentPreferences = [...data.contentPreference];
