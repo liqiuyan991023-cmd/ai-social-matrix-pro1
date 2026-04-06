@@ -1,15 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Sparkles, User, CheckCircle2 } from 'lucide-react';
+import { User, CheckCircle2 } from 'lucide-react';
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
-import PersonaDisplay from "../components/onboarding/PersonaDisplay";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,6 +21,27 @@ export default function OnboardingPage() {
     preferredLength: '',
     creativePurpose: ''
   });
+
+  // 组件加载时检查是否已存在用户画像
+  useEffect(() => {
+    const storedUserId = localStorage.getItem('userId');
+
+    if (storedUserId) {
+      const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
+      const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
+
+      if (storedPersona || storedProfile) {
+        // 如果已存在用户画像，直接显示成功界面
+        setUserId(storedUserId);
+        setProfileCreated(true);
+        return;
+      }
+    }
+
+    // 生成新的用户ID
+    const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    setUserId(newUserId);
+  }, []);
   
   // 使用新的generate-persona API生成创作人格
   const generatePersona = async (userInput: string): Promise<any> => {
@@ -496,24 +515,7 @@ export default function OnboardingPage() {
                 </p>
               </div>
               
-              {(() => {
-                try {
-                  const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                  if (savedPersona) {
-                    const personaData = JSON.parse(savedPersona);
-                    return (
-                      <PersonaDisplay
-                        persona={personaData}
-                        onEdit={() => setShowConfirmDialog(true)}
-                      />
-                    );
-                  }
-                  return null;
-                } catch (error) {
-                  console.error('Error loading creative persona:', error);
-                  return null;
-                }
-              })()}
+              {/* 移除了重复的PersonaDisplay，因为下面已经显示了完整的创作人格画像 */}
             </div>
 
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
@@ -718,7 +720,7 @@ export default function OnboardingPage() {
                   onClick={() => setShowConfirmDialog(false)}
                   className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
-                  取消
+                  取��
                 </button>
                 <button
                   onClick={handleRecreate}
