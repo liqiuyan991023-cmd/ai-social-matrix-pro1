@@ -18,10 +18,12 @@ export default function CreatePage() {
   const [generatedContent, setGeneratedContent] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
+  const [selectedOptimizations, setSelectedOptimizations] = useState<string[]>([]);
+  const [customFeedback, setCustomFeedback] = useState('');
   
   // 创建服务实例
-  const contentService = new ContentGenerationService();
-  const topicService = new TopicRecommendationService();
+  // const contentService = new ContentGenerationService(); // 未使用，暂时注释
+  // const topicService = new TopicRecommendationService(); // 未使用，暂时注释
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userId");
@@ -210,7 +212,7 @@ export default function CreatePage() {
   };
 
   // 重新生成内容，基于反馈优化
-  const handleRegenerate = async (feedback: string) => {
+  const handleRegenerate = async (feedback: string | string[]) => {
     if (!generatedContent) {
       alert('没有可优化的内容');
       return;
@@ -222,6 +224,11 @@ export default function CreatePage() {
       const personaData = storedPersona ? JSON.parse(storedPersona) : null;
       const personaSummary = personaData?.personaSummary || personaData?.personality || '';
 
+      // 处理feedback参数，可以是字符串或字符串数组
+      const regenerateFeedback = Array.isArray(feedback)
+        ? feedback.join('，')
+        : feedback;
+
       const response = await fetch('/api/content/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,7 +238,7 @@ export default function CreatePage() {
           idea: idea,
           userInput: idea,
           personaSummary: personaSummary,
-          regenerate: feedback
+          regenerate: regenerateFeedback
         })
       });
 
@@ -427,7 +434,7 @@ export default function CreatePage() {
               <div className="flex gap-3 mb-4">
                 <button
                   onClick={handleCopy}
-                  className="flex-1 py-3.5 bg-gradient-primary text-white rounded-xl hover:shadow-soft-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                  className="flex-1 py-3.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 transition-all duration-300"
                 >
                   {copied ? (
                     <>
@@ -464,7 +471,7 @@ export default function CreatePage() {
                       alert('保存草稿失败，请重试');
                     }
                   }}
-                  className="flex-1 py-3.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-primary hover:text-primary font-medium flex items-center justify-center gap-2 transition-all duration-300"
+                  className="flex-1 py-3.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2 transition-all duration-300"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -518,7 +525,7 @@ export default function CreatePage() {
                       alert("内容生成成功，但保存遇到问题，请重试");
                     }
                   }}
-                  className="flex-1 py-3.5 bg-gradient-success text-white rounded-xl hover:shadow-soft-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                  className="flex-1 py-3.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 transition-all duration-300"
                 >
                   <Check className="w-4 h-4" /> 接受该生成内容
                 </button>
@@ -530,7 +537,7 @@ export default function CreatePage() {
                     setKeywords([]);
                     setSelectedTopic(null);
                   }}
-                  className="flex-1 py-3.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-accent hover:text-accent font-medium flex items-center justify-center gap-2 transition-all duration-300"
+                  className="flex-1 py-3.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2 transition-all duration-300"
                 >
                   <RefreshCw className="w-4 h-4" /> 还需继续修改
                 </button>
@@ -552,15 +559,71 @@ export default function CreatePage() {
                       <button
                         key={tag}
                         onClick={() => {
-                          // 重新生成内容，基于当前内容优化
-                          handleRegenerate(tag);
+                          // 切换选中状态
+                          setSelectedOptimizations(prev =>
+                            prev.includes(tag)
+                              ? prev.filter(t => t !== tag)
+                              : [...prev, tag]
+                          );
                         }}
-                        className="px-4 py-2 bg-white text-gray-700 rounded-full text-xs hover:bg-gradient-accent hover:text-white transition-all duration-300 border border-blue-100 hover:border-transparent shadow-soft-sm"
+                        className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 border shadow-soft-sm ${
+                          selectedOptimizations.includes(tag)
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                        }`}
                       >
                         {tag}
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <span className="text-xs text-gray-500 mb-2 block">自定义反馈：</span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="输入您的优化建议..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={customFeedback}
+                      onChange={(e) => setCustomFeedback(e.target.value)}
+                    />
+                    <button
+                      onClick={() => {
+                        if (customFeedback.trim()) {
+                          handleRegenerate(customFeedback);
+                          setCustomFeedback('');
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm transition-all duration-300"
+                    >
+                      应用
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  {selectedOptimizations.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (selectedOptimizations.length > 0) {
+                          handleRegenerate(selectedOptimizations.join('，'));
+                          setSelectedOptimizations([]);
+                        }
+                      }}
+                      className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm transition-all duration-300"
+                    >
+                      应用选中优化 ({selectedOptimizations.length})
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedOptimizations([]);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm transition-all duration-300"
+                  >
+                    清空选择
+                  </button>
                 </div>
 
                 <button

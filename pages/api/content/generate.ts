@@ -22,15 +22,17 @@ const logApiCall = (level: string, message: string, data?: any) => {
   console.log(`[GENERATE-CONTENT-API] ${JSON.stringify(logEntry)}`);
 };
 
-// 验证API密钥
+// 验证API密钥 - 仅验证LongCat API Key
 const validateApiKey = (): { valid: boolean; error?: string } => {
+  // 仅使用LongCat API Key
   const longcatApiKey = process.env.LONGCAT_API_KEY;
 
+  // 检查LongCat API密钥是否配置
   if (!longcatApiKey) {
-    console.error('[GENERATE-CONTENT-API] LONGCAT_API_KEY is not configured');
+    console.error('[GENERATE-CONTENT-API] No LongCat API key is configured');
     return {
       valid: false,
-      error: 'LONGCAT_API_KEY is not configured in environment variables'
+      error: 'No API key is configured. Please set LONGCAT_API_KEY in environment variables'
     };
   }
 
@@ -249,10 +251,10 @@ async function generateContentStream(
     try {
       content = await callLongCatAPI(enhancedPrompt);
       if (!content || typeof content !== 'string' || content.trim().length === 0) {
-        throw new Error('LLM API returned empty content');
+        throw new Error('LongCat API returned empty content');
       }
     } catch (apiError) {
-      logApiCall('error', 'LLM API call failed', {
+      logApiCall('error', 'LongCat API call failed', {
         error: apiError,
         message: apiError instanceof Error ? apiError.message : 'Unknown API error'
       });
@@ -260,7 +262,7 @@ async function generateContentStream(
       // 异常兜底：返回友好错误信息，而不是直接抛出
       return res.status(500).json({
         success: false,
-        error: 'LLM_API_Error',
+        error: 'LongCat_API_Error',
         message: '内容生成服务暂时不可用，请稍后重试',
         timestamp: new Date().toISOString(),
         debug: process.env.NODE_ENV === 'development' ? {

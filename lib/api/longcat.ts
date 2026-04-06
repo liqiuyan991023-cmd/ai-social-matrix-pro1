@@ -1,99 +1,66 @@
 import axios from 'axios';
 
-// Real implementation that calls LLM API (OpenAI/ZhiPu/LongCat)
+// 仅调用 LongCat AI API 的简化版本
 export async function callLongCatAPI(prompt: string, options: any = {}): Promise<string> {
-  const apiUrl = process.env.ZHIPU_API_URL || process.env.OPENAI_API_URL || process.env.LONGCAT_API_URL;
-  const apiKey = process.env.ZHIPU_API_KEY || process.env.OPENAI_API_KEY || process.env.LONGCAT_API_KEY;
+  // 仅读取 LongCat 相关环境变量
+  const apiUrl = process.env.LONGCAT_API_URL;
+  const apiKey = process.env.LONGCAT_API_KEY;
 
-  // Determine which API we're using
-  const usingZhiPu = !!process.env.ZHIPU_API_KEY;
-  const usingOpenAI = !!process.env.OPENAI_API_KEY && !usingZhiPu;
-
-  // Log for diagnostics
+  // 日志：仅展示 LongCat 配置校验
   console.log('[callLongCatAPI] API Configuration Check:', {
     urlSet: !!apiUrl,
     keySet: !!apiKey,
     keyLength: apiKey?.length || 0,
-    usingZhiPu,
-    usingOpenAI
+    usingLongCat: true // 固定为 LongCat
   });
 
-  // Validate environment variables
+  // 校验 LongCat 环境变量（仅检查 LongCat 配置）
   if (!apiUrl || !apiKey) {
-    console.error('[callLongCatAPI] ❌ CRITICAL: Missing API configuration!', {
-      ZHIPU_API_URL: process.env.ZHIPU_API_URL ? '✓ SET' : '❌ NOT SET',
-      ZHIPU_API_KEY: process.env.ZHIPU_API_KEY ? '✓ SET' : '❌ NOT SET',
-      OPENAI_API_URL: process.env.OPENAI_API_URL ? '✓ SET (fallback)' : '❌ NOT SET',
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✓ SET (fallback)' : '❌ NOT SET',
-      LONGCAT_API_URL: process.env.LONGCAT_API_URL ? '✓ SET (fallback)' : '❌ NOT SET',
-      LONGCAT_API_KEY: process.env.LONGCAT_API_KEY ? '✓ SET (fallback)' : '❌ NOT SET',
-      message: 'Please set ZHIPU_API_KEY (recommended) or OPENAI_API_KEY in .env.local'
+    console.error('[callLongCatAPI] ❌ CRITICAL: Missing LongCat API configuration!', {
+      LONGCAT_API_URL: apiUrl ? '✓ SET' : '❌ NOT SET',
+      LONGCAT_API_KEY: apiKey ? '✓ SET' : '❌ NOT SET',
+      message: 'Please set LONGCAT_API_URL and LONGCAT_API_KEY in .env.local'
     });
-    // Fallback to mock response if API key is not configured
-    console.warn('[callLongCatAPI] Using MOCK response due to missing API configuration');
+    // 缺失配置时返回 Mock 响应
+    console.warn('[callLongCatAPI] Using MOCK response due to missing LongCat API configuration');
     return getMockResponse(prompt);
   }
 
   try {
-    console.log('[callLongCatAPI] 🔄 Calling API at:', apiUrl, `(using ${usingZhiPu ? 'ZhiPu' : usingOpenAI ? 'OpenAI' : 'LongCat'} API)`);
+    console.log('[callLongCatAPI] 🔄 Calling LongCat API at:', apiUrl);
 
-    let requestBody: any;
-    let endpoint: string;
+    // LongCat 专属请求配置（移除 ZhiPu/OpenAI 分支）
+    const endpoint = `${apiUrl}/completions`;
+    const requestBody = {
+      model: options.model || 'longcat-default', // 替换为 LongCat 实际默认模型名
+      prompt,
+      max_tokens: options.max_tokens || 1000,
+      temperature: options.temperature || 0.7,
+      ...options
+    };
 
-    if (usingZhiPu) {
-      // ZhiPu AI uses chat completions format
-      endpoint = `${apiUrl}/chat/completions`;
-      requestBody = {
-        model: options.model || 'glm-4',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: options.max_tokens || 1000,
-        temperature: options.temperature || 0.7,
-        ...options
-      };
-    } else {
-      // OpenAI/LongCat use completions format
-      endpoint = `${apiUrl}/completions`;
-      requestBody = {
-        model: options.model || (usingOpenAI ? 'gpt-3.5-turbo-instruct' : undefined),
-        prompt,
-        max_tokens: options.max_tokens || 1000,
-        temperature: options.temperature || 0.7,
-        ...options
-      };
-    }
-
+    // 发起 LongCat API 请求（适配 LongCat 通用请求头，若有专属头可调整）
     const response = await axios.post(endpoint, requestBody, {
       headers: {
         'Content-Type': 'application/json',
-        'api-key': apiKey // ZhiPu uses api-key header
+        // 若 LongCat 使用 Bearer Token 格式，替换为：Authorization: `Bearer ${apiKey}`
+        'api-key': apiKey // 若 LongCat 要求其他头格式，需按官方文档调整
       },
-      timeout: 30000 // 30 second timeout
+      timeout: 30000 // 30秒超时
     });
 
-    console.log('[callLongCatAPI] ✅ SUCCESS: Got response from API');
+    console.log('[callLongCatAPI] ✅ SUCCESS: Got response from LongCat API');
 
-    let responseText: string;
-    if (usingZhiPu) {
-      // ZhiPu returns chat format
-      responseText = response.data.choices?.[0]?.message?.content || '';
-    } else {
-      // OpenAI/LongCat return completions format
-      responseText = response.data.choices?.[0]?.text || '';
-    }
-
+    // 解析 LongCat 响应（按 completions 格式，若格式不同需调整）
+    const responseText = response.data.choices?.[0]?.text || '';
     if (responseText) {
       return responseText;
     } else {
-      console.warn('[callLongCatAPI] ⚠️  Unexpected response format:', response.data);
+      console.warn('[callLongCatAPI] ⚠️  Unexpected LongCat response format:', response.data);
       return getMockResponse(prompt);
     }
   } catch (error: any) {
-    console.error('[callLongCatAPI] ❌ FAILED: Error calling API:', {
+    console.error('[callLongCatAPI] ❌ FAILED: Error calling LongCat API:', {
       message: error.message,
       code: error.code,
       status: error.response?.status,
@@ -101,15 +68,15 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
       data: error.response?.data
     });
 
-    // Additional diagnostics for common errors
+    // LongCat 专属错误诊断
     if (error.response?.status === 401) {
-      console.error('[callLongCatAPI] 🔐 Authentication Failed - Check API_KEY validity');
+      console.error('[callLongCatAPI] 🔐 Authentication Failed - Check LONGCAT_API_KEY validity');
     } else if (error.response?.status === 404) {
-      console.error('[callLongCatAPI] 🌐 API Endpoint Not Found - Check API_URL');
+      console.error('[callLongCatAPI] 🌐 API Endpoint Not Found - Check LONGCAT_API_URL (e.g. https://api.longcat.ai)');
     } else if (error.code === 'ECONNREFUSED') {
-      console.error('[callLongCatAPI] 📡 Connection Refused - API service may be down');
+      console.error('[callLongCatAPI] 📡 Connection Refused - LongCat API service may be down');
     } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-      console.error('[callLongCatAPI] ⏱️  Request Timeout - API service may be slow or unreachable');
+      console.error('[callLongCatAPI] ⏱️  Request Timeout - LongCat API service may be slow or unreachable');
     }
 
     console.warn('[callLongCatAPI] ⚠️  Falling back to MOCK response');
@@ -117,9 +84,8 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
   }
 }
 
-// Mock response function for fallback
+// 保留原有 Mock 响应逻辑（无需修改）
 function getMockResponse(prompt: string): string {
-  // Mock responses based on prompt content
   if (prompt.includes('生成3个吸引人的标题')) {
     return `✨ 10分钟快速早餐 recipes | 打工人必备\n🍎 健康早餐灵感 | 营养均衡一整天\n🌟 早餐不重样 | 一周7天早餐计划`;
   }
@@ -298,6 +264,6 @@ function getMockResponse(prompt: string): string {
 希望这份分析报告对你有所帮助，期待看到你更多精彩的创作！`;
   }
 
-  // Default response
+  // 默认 Mock 响应
   return `This is a mock response for the prompt: ${prompt.substring(0, 100)}...`;
 }
