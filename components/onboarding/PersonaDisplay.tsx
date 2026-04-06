@@ -31,11 +31,58 @@ export default function PersonaDisplay({ persona, onEdit }: PersonaDisplayProps)
           </div>
         </div>
 
-        {/* 只保留创作人格相关字段，移除性格特点等冗余信息 */}
-        <div className="bg-gray-50 rounded-lg p-3">
-          <h4 className="text-xs font-medium text-gray-500 mb-1">创作风格</h4>
-          <div className="max-h-32 overflow-y-auto text-sm text-gray-700 leading-relaxed break-words">
-            {creativePersona.contentStyle || '亲切自然'}
+        {/* 完整的人设诊断维度展示 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">年龄范围</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.ageRange || '-'}</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">职业或主要身份</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.profession || '-'}</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">平时关注内容</h4>
+            <div className="text-sm text-gray-700 break-words">
+              {Array.isArray(creativePersona.interests)
+                ? creativePersona.interests.join('、')
+                : creativePersona.interests || '-'}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">表达风格</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.contentStyle || '-'}</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">创作内容偏好</h4>
+            <div className="text-sm text-gray-700 break-words">
+              {Array.isArray(creativePersona.contentGoals)
+                ? creativePersona.contentGoals.join('、')
+                : creativePersona.contentGoals || '-'}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">内容长度</h4>
+            <p className="text-sm text-gray-700 break-words">
+              {creativePersona.preferredLength === 'short' ? '短篇（300-500字）' :
+               creativePersona.preferredLength === 'medium' ? '中篇（500-800字）' :
+               creativePersona.preferredLength === 'long' ? '长篇（800-1200字）' : '-'}
+            </p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">创作目的</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.creativeNeeds || '-'}</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-3">
+            <h4 className="text-xs font-medium text-gray-500 mb-1">受众群体</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.targetAudience || '-'}</p>
           </div>
         </div>
       </div>
