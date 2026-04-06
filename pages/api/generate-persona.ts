@@ -196,16 +196,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         });
 
+        // 构建个性化的人格总结
+        const ageRange = userData['年龄范围'] || '26-35岁';
+        const profession = userData['职业'] || '创作者';
+        const interests = userData['兴趣'] || '生活分享';
+        const contentGoals = userData['内容偏好'] || '生活分享';
+        const contentStyle = userData['表达风格'] || '亲切自然';
+        const creativePurpose = userData['创作目的'] || userData['创作需求'] || '分享生活经验';
+
+        // 将兴趣字符串转换为数组
+        const interestsArray = interests.includes('、') || interests.includes(',')
+          ? interests.split(/[、,]/).map((i: string) => i.trim())
+          : [interests];
+
+        // 将内容偏好字符串转换为数组
+        const contentGoalsArray = contentGoals.includes('、') || contentGoals.includes(',')
+          ? contentGoals.split(/[、,]/).map((i: string) => i.trim())
+          : [contentGoals];
+
         personaData = {
-          ageRange: userData['年龄范围'] || '26-35岁',
-          profession: userData['职业'] || '创作者',
-          interests: userData['兴趣'] ? userData['兴趣'].split('，').map((i: string) => i.trim()) : ['生活分享'],
-          contentStyle: userData['表达风格'] || '亲切自然',
-          contentGoals: userData['内容偏好'] ? userData['内容偏好'].split('，').map((i: string) => i.trim()) : ['生活分享'],
+          ageRange,
+          profession,
+          interests: interestsArray,
+          contentStyle,
+          contentGoals: contentGoalsArray,
           preferredLength: userData['内容长度'] || 'medium',
-          creativePurpose: userData['创作目的'] || userData['创作需求'] || '分享生活经验',
+          creativePurpose,
           targetAudience: '对相关内容感兴趣的读者',
-          personaSummary: `基于你的个人特点（${userData['职业'] || '创作者'}${userData['年龄范围'] || ''}），我为你定制了专属的创作风格。你的优势在于${userData['兴趣'] || '内容创作'}，建议重点关注${userData['内容偏好'] || '生活分享'}，采用${userData['表达风格'] || '亲切自然'}的表达方式，这样最容易引起目标受众的共鸣。`
+          personaSummary: `基于你的个人特点（${profession}、${ageRange}），我为你定制了专属的创作风格。你的优势在于${interests}，建议重点关注${contentGoals}，采用${contentStyle}的表达方式，以${creativePurpose}为创作目的，这样最容易吸引对你的内容感兴趣的读者群体。`
         };
       }
 
