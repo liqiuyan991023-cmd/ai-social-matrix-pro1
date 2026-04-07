@@ -4,8 +4,15 @@ import { useRouter } from 'next/router';
 export default function HomePage() {
   const router = useRouter();
   const [isRedirecting, setIsRedirecting] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const storedUserId = localStorage.getItem('userId');
 
     if (storedUserId) {
@@ -16,7 +23,7 @@ export default function HomePage() {
 
     // 保留加载状态，用于即时反馈
     setIsRedirecting(false);
-  }, [router]);
+  }, [router, isMounted]);
 
   if (isRedirecting) {
     return (

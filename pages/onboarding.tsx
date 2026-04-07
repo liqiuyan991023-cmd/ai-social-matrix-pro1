@@ -10,6 +10,7 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [formData, setFormData] = useState({
     ageRange: '',
     profession: '',
@@ -24,6 +25,12 @@ export default function OnboardingPage() {
 
   // 组件加载时检查是否已存在用户画像
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const storedUserId = localStorage.getItem('userId');
 
     if (storedUserId) {
@@ -41,7 +48,7 @@ export default function OnboardingPage() {
     // 生成新的用户ID
     const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     setUserId(newUserId);
-  }, []);
+  }, [isMounted]);
   
   // 使用新的generate-persona API生成创作人格
   const generatePersona = async (userInput: string): Promise<any> => {

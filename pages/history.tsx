@@ -41,6 +41,7 @@ export default function HistoryPage() {
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('一周内');
   const [userRequirements, setUserRequirements] = useState<string>('');
   const [showSummaryOptions, setShowSummaryOptions] = useState<boolean>(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // 创建服务实例
   const contentService = new ContentGenerationService();
@@ -58,6 +59,12 @@ export default function HistoryPage() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     // 检查是否有 userId 存储
     const storedUserId = localStorage.getItem('userId');
     if (!storedUserId) {
@@ -75,7 +82,7 @@ export default function HistoryPage() {
       // 如果没有本地数据，获取用户的创作历史
       fetchCreations(storedUserId);
     }
-  }, [router]);
+  }, [router, isMounted]);
 
 
   const fetchCreations = async (userId: string) => {

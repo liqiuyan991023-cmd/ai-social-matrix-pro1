@@ -20,12 +20,19 @@ export default function CreatePage() {
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedOptimizations, setSelectedOptimizations] = useState<string[]>([]);
   const [customFeedback, setCustomFeedback] = useState('');
-  
+  const [isMounted, setIsMounted] = useState(false);
+
   // 创建服务实例
   // const contentService = new ContentGenerationService(); // 未使用，暂时注释
   // const topicService = new TopicRecommendationService(); // 未使用，暂时注释
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const storedUserId = localStorage.getItem("userId");
     if (!storedUserId) {
       router.push("/onboarding");
@@ -34,9 +41,11 @@ export default function CreatePage() {
     setUserId(storedUserId);
     // 同时从localStorage和API获取用户画像，确保加载成功
     loadUserProfile(storedUserId);
-  }, [router]);
+  }, [router, isMounted]);
 
   const loadUserProfile = async (userId: string) => {
+    if (typeof window === 'undefined') return;
+
     try {
       setIsLoadingProfile(true);
       // 首先尝试从localStorage获取
@@ -62,6 +71,8 @@ export default function CreatePage() {
   };
 
   const fetchUserProfile = async (userId: string) => {
+    if (typeof window === 'undefined') return null;
+
     try {
       setIsLoadingProfile(true);
       const response = await fetch(`/api/user/profile?userId=${userId}`);

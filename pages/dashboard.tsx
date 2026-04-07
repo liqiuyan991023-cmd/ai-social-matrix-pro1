@@ -12,8 +12,15 @@ export default function DashboardPage() {
   const [hotTopics, setHotTopics] = useState<HotTopic[]>([]);
   const [isLoadingHotTopics, setIsLoadingHotTopics] = useState(false);
   const [hotTopicsError, setHotTopicsError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     // 检查是否有 userId 存储
     const storedUserId = localStorage.getItem('userId');
     if (!storedUserId) {
@@ -24,7 +31,7 @@ export default function DashboardPage() {
 
     // 获取热点话题
     fetchHotTopics();
-  }, [router]);
+  }, [router, isMounted]);
 
   const fetchHotTopics = useCallback(async (refresh = false) => {
     setIsLoadingHotTopics(true);

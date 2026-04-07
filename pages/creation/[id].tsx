@@ -9,12 +9,19 @@ export default function CreationDetailPage({ id }: { id: string }) {
   const [creation, setCreation] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     if (id) {
       fetchCreation(id);
     }
-  }, [id]);
+  }, [id, isMounted]);
 
   const fetchCreation = async (creationId: string) => {
     try {
