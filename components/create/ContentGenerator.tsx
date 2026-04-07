@@ -28,10 +28,13 @@ export default function ContentGenerator({ userId, topic, onComplete }: ContentG
     setError(null);
 
     try {
-      // 获取创作人格总结
-      const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
-      const personaData = storedPersona ? JSON.parse(storedPersona) : null;
-      const personaSummary = personaData?.personaSummary || personaData?.personality || '';
+      // 获取创作人格总结 - 只在客户端执行
+      let personaSummary = '';
+      if (typeof window !== 'undefined') {
+        const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
+        const personaData = storedPersona ? JSON.parse(storedPersona) : null;
+        personaSummary = personaData?.personaSummary || personaData?.personality || '';
+      }
 
       const response = await fetch("/api/content/generate", {
         method: "POST",

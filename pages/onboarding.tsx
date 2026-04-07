@@ -31,23 +31,27 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!isMounted) return;
 
-    const storedUserId = localStorage.getItem('userId');
+    const initializeOnboarding = () => {
+      const storedUserId = localStorage.getItem('userId');
 
-    if (storedUserId) {
-      const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
-      const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
+      if (storedUserId) {
+        const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
+        const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
 
-      if (storedPersona || storedProfile) {
-        // 如果已存在用户画像，直接显示成功界面
-        setUserId(storedUserId);
-        setProfileCreated(true);
-        return;
+        if (storedPersona || storedProfile) {
+          // 如果已存在用户画像，直接显示成功界面
+          setUserId(storedUserId);
+          setProfileCreated(true);
+          return;
+        }
       }
-    }
 
-    // 生成新的用户ID
-    const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    setUserId(newUserId);
+      // 生成新的用户ID
+      const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      setUserId(newUserId);
+    };
+
+    initializeOnboarding();
   }, [isMounted]);
   
   // 使用新的generate-persona API生成创作人格
