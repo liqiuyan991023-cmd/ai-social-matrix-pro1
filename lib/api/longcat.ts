@@ -1,66 +1,55 @@
 import axios from 'axios';
 
-// 仅调用 LongCat AI API 的简化版本
 export async function callLongCatAPI(prompt: string, options: any = {}): Promise<string> {
-  // 仅读取 LongCat 相关环境变量
   const apiUrl = process.env.LONGCAT_API_URL;
   const apiKey = process.env.LONGCAT_API_KEY;
+  const model = process.env.LONGCAT_MODEL || 'LongCat-Flash-Thinking-2601';
 
-  // 日志：仅展示 LongCat 配置校验
   console.log('[callLongCatAPI] API Configuration Check:', {
     urlSet: !!apiUrl,
     keySet: !!apiKey,
     keyLength: apiKey?.length || 0,
-    usingLongCat: true // 固定为 LongCat
+    usingLongCat: true
   });
 
-  // 校验 LongCat 环境变量（仅检查 LongCat 配置）
   if (!apiUrl || !apiKey) {
-    console.error('[callLongCatAPI] ❌ CRITICAL: Missing LongCat API configuration!', {
-      LONGCAT_API_URL: apiUrl ? '✓ SET' : '❌ NOT SET',
-      LONGCAT_API_KEY: apiKey ? '✓ SET' : '❌ NOT SET',
-      message: 'Please set LONGCAT_API_URL and LONGCAT_API_KEY in .env.local'
+    console.error('[callLongCatAPI] CRITICAL: Missing LongCat API configuration!', {
+      LONGCAT_API_URL: apiUrl ? 'SET' : 'NOT SET',
+      LONGCAT_API_KEY: apiKey ? 'SET' : 'NOT SET'
     });
-    // 缺失配置时返回 Mock 响应
-    console.warn('[callLongCatAPI] Using MOCK response due to missing LongCat API configuration');
-    return getMockResponse(prompt);
+    throw new Error('Missing LongCat API configuration');
   }
 
   try {
-    console.log('[callLongCatAPI] 🔄 Calling LongCat API at:', apiUrl);
+    console.log('[callLongCatAPI] Calling LongCat API at:', apiUrl);
 
-    // LongCat 专属请求配置（移除 ZhiPu/OpenAI 分支）
-    const endpoint = `${apiUrl}/completions`;
+    const endpoint = `${apiUrl}/v1/chat/completions`;
     const requestBody = {
-      model: options.model || 'longcat-default', // 替换为 LongCat 实际默认模型名
-      prompt,
-      max_tokens: options.max_tokens || 1000,
-      temperature: options.temperature || 0.7,
-      ...options
+      model: model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: options.max_tokens || 2000,
+      temperature: options.temperature || 0.7
     };
 
-    // 发起 LongCat API 请求（适配 LongCat 通用请求头，若有专属头可调整）
     const response = await axios.post(endpoint, requestBody, {
       headers: {
         'Content-Type': 'application/json',
-        // 若 LongCat 使用 Bearer Token 格式，替换为：Authorization: `Bearer ${apiKey}`
-        'api-key': apiKey // 若 LongCat 要求其他头格式，需按官方文档调整
+        'Authorization': `Bearer ${apiKey}`
       },
-      timeout: 30000 // 30秒超时
+      timeout: 30000
     });
 
-    console.log('[callLongCatAPI] ✅ SUCCESS: Got response from LongCat API');
+    console.log('[callLongCatAPI] SUCCESS: Got response from LongCat API');
 
-    // 解析 LongCat 响应（按 completions 格式，若格式不同需调整）
-    const responseText = response.data.choices?.[0]?.text || '';
+    const responseText = response.data.choices?.[0]?.message?.content || '';
     if (responseText) {
       return responseText;
     } else {
-      console.warn('[callLongCatAPI] ⚠️  Unexpected LongCat response format:', response.data);
-      return getMockResponse(prompt);
+      console.error('[callLongCatAPI] Unexpected LongCat response format:', response.data);
+      throw new Error('Unexpected response format from LongCat API');
     }
   } catch (error: any) {
-    console.error('[callLongCatAPI] ❌ FAILED: Error calling LongCat API:', {
+    console.error('[callLongCatAPI] FAILED: Error calling LongCat API:', {
       message: error.message,
       code: error.code,
       status: error.response?.status,
@@ -68,202 +57,16 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
       data: error.response?.data
     });
 
-    // LongCat 专属错误诊断
     if (error.response?.status === 401) {
-      console.error('[callLongCatAPI] 🔐 Authentication Failed - Check LONGCAT_API_KEY validity');
+      console.error('[callLongCatAPI] Authentication Failed - Check LONGCAT_API_KEY validity');
     } else if (error.response?.status === 404) {
-      console.error('[callLongCatAPI] 🌐 API Endpoint Not Found - Check LONGCAT_API_URL (e.g. https://api.longcat.ai)');
+      console.error('[callLongCatAPI] API Endpoint Not Found - Check LONGCAT_API_URL');
     } else if (error.code === 'ECONNREFUSED') {
-      console.error('[callLongCatAPI] 📡 Connection Refused - LongCat API service may be down');
+      console.error('[callLongCatAPI] Connection Refused - LongCat API service may be down');
     } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-      console.error('[callLongCatAPI] ⏱️  Request Timeout - LongCat API service may be slow or unreachable');
+      console.error('[callLongCatAPI] Request Timeout - LongCat API service may be slow or unreachable');
     }
 
-    console.warn('[callLongCatAPI] ⚠️  Falling back to MOCK response');
-    return getMockResponse(prompt);
+    throw error;
   }
-}
-
-// 保留原有 Mock 响应逻辑（无需修改）
-function getMockResponse(prompt: string): string {
-  if (prompt.includes('生成3个吸引人的标题')) {
-    return `✨ 10分钟快速早餐 recipes | 打工人必备\n🍎 健康早餐灵感 | 营养均衡一整天\n🌟 早餐不重样 | 一周7天早餐计划`;
-  }
-
-  if (prompt.includes('生成小红书笔记正文')) {
-    return `大家好呀！今天想和大家分享一下我的早餐日常～\n\n作为一个上班族，每天早上时间都很紧张，所以我特别喜欢简单又营养的早餐。最近发现了几个超级方便的早餐组合，想分享给同样忙碌的你们！\n\n第一个是我的最爱：酸奶碗 + 水果 + 坚果。只需要5分钟，就能搞定一碗营养均衡的早餐。我通常会用希腊酸奶，加上蓝莓、香蕉和一把杏仁，简单又好吃！\n\n第二个是全麦吐司 + 牛油果 + 煎蛋。全麦吐司富含膳食纤维，牛油果提供健康脂肪，煎蛋则是优质蛋白质的来源。这个组合吃了特别扛饿，上午都不会觉得饿。\n\n第三个是燕麦粥 + 蜂蜜 + 肉桂粉。燕麦粥是冬季的绝佳选择，温暖又饱腹。我会在煮好的燕麦粥里加一勺蜂蜜，撒点肉桂粉，味道超级棒！\n\n这些早餐不仅做法简单，而且营养均衡，特别适合上班族。希望大家喜欢我的分享，也欢迎在评论区留言分享你们的早餐灵感哦！\n\n#早餐 #健康饮食 #上班族必备`;
-  }
-
-  if (prompt.includes('生成三类关键词')) {
-    return `{
-  "topic": ["早餐食谱", "健康饮食", "上班族早餐"],
-  "search": ["简单早餐做法", "营养早餐搭配", "快速早餐食谱"],
-  "tags": ["早餐", "健康饮食", "上班族必备", "营养均衡", "快手早餐"]
-}`;
-  }
-
-  if (prompt.includes('生成创作人格画像')) {
-    return `{
-  "personality": "亲切友好，注重生活品质，喜欢分享实用的生活技巧",
-  "tone": "温暖自然，口语化，像是和朋友聊天一样",
-  "uniqueAngle": "从上班族的角度出发，分享简单实用的生活建议",
-  "contentStrengths": ["实用性强", "内容具体", "情感共鸣", "易于执行"]
-}`;
-  }
-
-  if (prompt.includes('生成10个适合在小红书创作的主题推荐')) {
-    return `[
-  {
-    "id": "topic_1",
-    "title": "5分钟快手早餐食谱",
-    "contentAngle": "分享适合上班族的快速早餐做法",
-    "category": "生活方式",
-    "trendingScore": 85,
-    "estimatedEngagement": 75,
-    "matchScore": 90,
-    "difficulty": "easy"
-  },
-  {
-    "id": "topic_2",
-    "title": "办公室解压小技巧",
-    "contentAngle": "如何在工作中缓解压力",
-    "category": "职场",
-    "trendingScore": 78,
-    "estimatedEngagement": 80,
-    "matchScore": 85,
-    "difficulty": "medium"
-  },
-  {
-    "id": "topic_3",
-    "title": "周末短途旅行推荐",
-    "contentAngle": "城市周边2小时车程内的好去处",
-    "category": "旅行",
-    "trendingScore": 90,
-    "estimatedEngagement": 85,
-    "matchScore": 80,
-    "difficulty": "medium"
-  },
-  {
-    "id": "topic_4",
-    "title": "职场新人必备技能",
-    "contentAngle": "刚入职场需要掌握的软技能",
-    "category": "职场",
-    "trendingScore": 82,
-    "estimatedEngagement": 78,
-    "matchScore": 88,
-    "difficulty": "medium"
-  },
-  {
-    "id": "topic_5",
-    "title": "平价好物分享",
-    "contentAngle": "性价比高的日常生活用品",
-    "category": "生活方式",
-    "trendingScore": 88,
-    "estimatedEngagement": 90,
-    "matchScore": 75,
-    "difficulty": "easy"
-  },
-  {
-    "id": "topic_6",
-    "title": "下班后的自我提升",
-    "contentAngle": "利用业余时间学习新技能",
-    "category": "学习",
-    "trendingScore": 75,
-    "estimatedEngagement": 70,
-    "matchScore": 92,
-    "difficulty": "hard"
-  },
-  {
-    "id": "topic_7",
-    "title": "健康生活小习惯",
-    "contentAngle": "容易坚持的健康生活方式",
-    "category": "生活方式",
-    "trendingScore": 80,
-    "estimatedEngagement": 75,
-    "matchScore": 85,
-    "difficulty": "easy"
-  },
-  {
-    "id": "topic_8",
-    "title": "职场穿搭指南",
-    "contentAngle": "适合办公室的时尚穿搭",
-    "category": "时尚",
-    "trendingScore": 85,
-    "estimatedEngagement": 88,
-    "matchScore": 78,
-    "difficulty": "medium"
-  },
-  {
-    "id": "topic_9",
-    "title": "家常菜菜谱分享",
-    "contentAngle": "简单易做的家常菜谱",
-    "category": "美食",
-    "trendingScore": 82,
-    "estimatedEngagement": 85,
-    "matchScore": 80,
-    "difficulty": "easy"
-  },
-  {
-    "id": "topic_10",
-    "title": "理财入门指南",
-    "contentAngle": "新手如何开始理财",
-    "category": "职场",
-    "trendingScore": 78,
-    "estimatedEngagement": 72,
-    "matchScore": 88,
-    "difficulty": "medium"
-  }
-]`;
-  }
-
-  if (prompt.includes('分析反馈并给出具体的优化建议')) {
-    return `{
-  "promptAdjustments": ["增加更多具体的例子和个人经历", "强调实用性和可操作性", "加入更多情感表达，增强共鸣"],
-  "styleAdjustments": ["使用更亲切自然的口语化表达", "增加适当的emoji，提升阅读体验", "优化段落结构，使内容更易读"]
-}`;
-  }
-
-  if (prompt.includes('基于反馈优化创作人格画像')) {
-    return `{
-  "personality": "亲切友好，注重生活品质，喜欢分享实用的生活技巧，更注重情感表达",
-  "tone": "温暖自然，口语化，像是和朋友聊天一样，增加更多情感共鸣",
-  "uniqueAngle": "从上班族的角度出发，分享简单实用的生活建议，加入更多个人经历和故事",
-  "contentStrengths": ["实用性强", "内容具体", "情感共鸣", "易于执行", "故事性强"]
-}`;
-  }
-
-  if (prompt.includes('基于以下用户的创作历史，生成一份AI创作总结')) {
-    return `# 你的创作风格分析报告
-
-## 创作风格特点
-
-你的创作风格以实用主义为主，注重分享具体的生活技巧和经验。语言风格亲切自然，像是和朋友聊天一样，容易引起读者的共鸣。
-
-## 创作优势
-
-1. **实用性强**：你的内容都有很强的可操作性，读者可以直接应用到生活中。
-2. **情感共鸣**：你善于从个人经历出发，分享真实的感受，容易引起读者的共鸣。
-3. **结构清晰**：你的内容结构合理，逻辑清晰，易于阅读和理解。
-4. **内容具体**：你喜欢分享具体的细节和例子，使内容更加生动可信。
-
-## 改进建议
-
-1. **增加多样性**：尝试在内容中加入更多不同类型的主题，丰富创作内容。
-2. **提升互动性**：在内容中增加更多的互动元素，如提问、投票等，提高读者参与度。
-3. **加强视觉效果**：注意内容的排版和视觉呈现，使用更多的表情符号和分割线，提升阅读体验。
-4. **深化内容深度**：在分享实用技巧的同时，可以适当增加一些深度分析，提升内容的价值。
-
-## 未来创作方向
-
-基于你的创作历史，建议你可以尝试以下创作方向：
-
-1. **系列化内容**：将相关主题的内容整理成系列，如「一周早餐系列」、「职场技能系列」等。
-2. **专家访谈**：邀请相关领域的专家进行访谈，为读者提供更专业的建议。
-3. **读者互动**：基于读者的问题和反馈，创作针对性的内容，提高读者粘性。
-
-希望这份分析报告对你有所帮助，期待看到你更多精彩的创作！`;
-  }
-
-  // 默认 Mock 响应
-  return `This is a mock response for the prompt: ${prompt.substring(0, 100)}...`;
 }

@@ -9,59 +9,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     systemInfo: {}
   };
 
-  // 1. Check environment variables
+  // 1. Check environment variables (仅保留 LongCat 和 Tavily)
   diagnostics.environment = {
     LONGCAT_API_URL: process.env.LONGCAT_API_URL || 'NOT_SET',
     LONGCAT_API_KEY: process.env.LONGCAT_API_KEY ? '✓ SET (length: ' + process.env.LONGCAT_API_KEY.length + ')' : 'NOT_SET',
-    OPENAI_API_URL: process.env.OPENAI_API_URL || 'NOT_SET',
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✓ SET (length: ' + process.env.OPENAI_API_KEY.length + ')' : 'NOT_SET',
-    ZHIPU_API_URL: process.env.ZHIPU_API_URL || 'NOT_SET',
-    ZHIPU_API_KEY: process.env.ZHIPU_API_KEY ? '✓ SET (length: ' + process.env.ZHIPU_API_KEY.length + ')' : 'NOT_SET',
     TAVILY_API_URL: process.env.TAVILY_API_URL || 'NOT_SET',
     TAVILY_API_KEY: process.env.TAVILY_API_KEY ? '✓ SET (length: ' + process.env.TAVILY_API_KEY.length + ')' : 'NOT_SET',
     REDIS_URL: process.env.REDIS_URL ? '✓ SET' : 'NOT_SET',
     NODE_ENV: process.env.NODE_ENV || 'NOT_SET'
   };
 
-  // 2. Test LLM API connectivity and capability (ZhiPu/OpenAI/LongCat)
-  console.log('[API-DIAGNOSTICS] Testing LLM API (ZhiPu/OpenAI/LongCat)...');
+  // 2. Test LongCat API connectivity
+  console.log('[API-DIAGNOSTICS] Testing LongCat API...');
   try {
-    const apiUrl = process.env.ZHIPU_API_URL || process.env.OPENAI_API_URL || process.env.LONGCAT_API_URL;
-    const apiKey = process.env.ZHIPU_API_KEY || process.env.OPENAI_API_KEY || process.env.LONGCAT_API_KEY;
-    const usingZhiPu = !!process.env.ZHIPU_API_KEY;
-    const usingOpenAI = !!process.env.OPENAI_API_KEY && !usingZhiPu;
+    const apiUrl = process.env.LONGCAT_API_URL;
+    const apiKey = process.env.LONGCAT_API_KEY;
 
     if (!apiUrl || !apiKey) {
       diagnostics.apiTests.longcat = {
         status: 'FAILED',
-        reason: 'Missing API configuration for ZhiPu, OpenAI, or LongCat',
-        action: 'Please set ZHIPU_API_KEY (recommended), OPENAI_API_KEY, or LONGCAT_API_KEY in .env.local'
+        reason: 'Missing LongCat API configuration',
+        action: 'Please set LONGCAT_API_URL and LONGCAT_API_KEY in .env.local'
       };
     } else {
       const testPrompt = "你是助手。请用一句话回复：你配置正确吗？";
 
-      console.log(`[API-DIAGNOSTICS] Calling ${usingZhiPu ? 'ZhiPu' : usingOpenAI ? 'OpenAI' : 'LongCat'} API at: ${apiUrl}`);
+      console.log(`[API-DIAGNOSTICS] Calling LongCat API at: ${apiUrl}`);
 
-      let requestBody: any;
-      let endpoint: string;
-
-      if (usingZhiPu) {
-        endpoint = `${apiUrl}/chat/completions`;
-        requestBody = {
-          model: 'glm-4',
-          messages: [{ role: 'user', content: testPrompt }],
-          max_tokens: 100,
-          temperature: 0.7
-        };
-      } else {
-        endpoint = `${apiUrl}/completions`;
-        requestBody = {
-          model: usingOpenAI ? 'gpt-3.5-turbo-instruct' : undefined,
-          prompt: testPrompt,
-          max_tokens: 100,
-          temperature: 0.7
-        };
-      }
+      const endpoint = `${apiUrl}/v1/chat/completions`;
+      const requestBody = {
+        model: 'LongCat-Flash-Thinking-2601',
+        messages: [{ role: 'user', content: testPrompt }],
+        max_tokens: 100,
+        temperature: 0.7
+      };
 
       const response = await axios.post(endpoint, requestBody, {
         headers: {
@@ -71,22 +52,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         timeout: 10000
       });
 
-      let responseText: string;
-      if (usingZhiPu) {
-        responseText = response.data.choices?.[0]?.message?.content || '';
-      } else {
-        responseText = response.data.choices?.[0]?.text || '';
-      }
+      const responseText = response.data.choices?.[0]?.message?.content || '';
 
       if (responseText) {
         diagnostics.apiTests.longcat = {
           status: 'SUCCESS',
-          message: `✓ ${usingZhiPu ? 'ZhiPu' : usingOpenAI ? 'OpenAI' : 'LongCat'} API is working correctly`,
+          message: '✓ LongCat API is working correctly',
           responseText: responseText.substring(0, 100),
-          fullResponse: response.data,
-          apiType: usingZhiPu ? 'ZhiPu' : usingOpenAI ? 'OpenAI' : 'LongCat'
+          fullResponse: response.data
         };
-        console.log(`[API-DIAGNOSTICS] ${usingZhiPu ? 'ZhiPu' : usingOpenAI ? 'OpenAI' : 'LongCat'} API test successful`);
+        console.log('[API-DIAGNOSTICS] LongCat API test successful');
       } else {
         diagnostics.apiTests.longcat = {
           status: 'FAILED',
@@ -96,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
   } catch (error: any) {
-    console.error('[API-DIAGNOSTICS] LLM API test failed:', error.message);
+    console.error('[API-DIAGNOSTICS] LongCat API test failed:', error.message);
     diagnostics.apiTests.longcat = {
       status: 'FAILED',
       error: error.message,
@@ -168,15 +143,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // 5. Summary and recommendations
   const recommendations: string[] = [];
-  
-  if (!process.env.ZHIPU_API_KEY && !process.env.OPENAI_API_KEY && !process.env.LONGCAT_API_KEY) {
-    recommendations.push('❌ LLM API is missing - This causes all content generation and summary features to fail with mock responses. Please set ZHIPU_API_KEY (recommended), OPENAI_API_KEY, or LONGCAT_API_KEY');
+
+  if (!process.env.LONGCAT_API_KEY) {
+    recommendations.push('❌ LongCat API is missing - This causes all content generation and summary features to fail. Please set LONGCAT_API_KEY');
   }
   if (!process.env.TAVILY_API_KEY) {
     recommendations.push('❌ TAVILY_API_KEY is missing - This causes hot topics feature to show fallback/mock data');
   }
   if (diagnostics.apiTests.longcat?.status !== 'SUCCESS') {
-    recommendations.push('⚠️  LLM API is not responding correctly - Check API URL and KEY validity');
+    recommendations.push('⚠️  LongCat API is not responding correctly - Check API URL and KEY validity');
   }
   if (diagnostics.apiTests.tavily?.status !== 'SUCCESS') {
     recommendations.push('⚠️  Tavily API is not responding correctly - Check API KEY validity');
@@ -187,7 +162,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const summary = {
-    allApisConfigured: !!((process.env.ZHIPU_API_KEY || process.env.OPENAI_API_KEY || process.env.LONGCAT_API_KEY) && process.env.TAVILY_API_KEY),
+    allApisConfigured: !!(process.env.LONGCAT_API_KEY && process.env.TAVILY_API_KEY),
     longcatApiWorking: diagnostics.apiTests.longcat?.status === 'SUCCESS',
     tavilyApiWorking: diagnostics.apiTests.tavily?.status === 'SUCCESS',
     recommendations

@@ -30,9 +30,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       const service = new UserProfileService();
-      const profile = await service.getProfile(userId);
-      
+      let profile = await service.getProfile(userId);
+
+      // 如果Redis中没有找到，尝试从localStorage获取（兼容旧数据）
       if (!profile) {
+        // 在服务器端，我们无法访问localStorage，所以直接返回404
+        // 客户端会在后续尝试从localStorage获取
         return res.status(404).json({ error: "Profile not found" });
       }
       

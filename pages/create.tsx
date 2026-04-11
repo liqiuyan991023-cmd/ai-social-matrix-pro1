@@ -182,8 +182,11 @@ export default function CreatePage() {
               if (stageData.stage === 'title') {
                 generatedTitle = stageData.content || '';
               } else if (stageData.stage === 'content') {
-                fullContent = stageData.content || '';
-                setGeneratedContent(fullContent);
+                // 只有当stageData.content不为空时才更新fullContent
+                if (stageData.content) {
+                  fullContent = stageData.content;
+                  setGeneratedContent(fullContent);
+                }
               } else if (stageData.stage === 'keywords') {
                 setKeywords(stageData.content?.tags || []);
               }
@@ -194,7 +197,8 @@ export default function CreatePage() {
         }
       }
 
-      if (!fullContent) {
+      // 检查fullContent是否为undefined或null，允许空字符串
+      if (fullContent === undefined || fullContent === null) {
         throw new Error('内容生成失败，请重试');
       }
 
@@ -240,6 +244,9 @@ export default function CreatePage() {
         ? feedback.join('，')
         : feedback;
 
+      // 构建优化后的prompt，包含原有内容和新反馈
+      const optimizationPrompt = `基于以下内容进行优化：\n\n${generatedContent}\n\n优化要求：${regenerateFeedback}\n\n请根据优化要求调整内容，保持原有风格但改进表达方式。`;
+
       const response = await fetch('/api/content/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -247,7 +254,7 @@ export default function CreatePage() {
           userId: userId,
           topicId: 'default_topic',
           idea: idea,
-          userInput: idea,
+          userInput: optimizationPrompt,
           personaSummary: personaSummary,
           regenerate: regenerateFeedback
         })
@@ -285,8 +292,11 @@ export default function CreatePage() {
               if (stageData.stage === 'title') {
                 generatedTitle = stageData.content || '';
               } else if (stageData.stage === 'content') {
-                fullContent = stageData.content || '';
-                setGeneratedContent(fullContent);
+                // 只有当stageData.content不为空时才更新fullContent
+                if (stageData.content) {
+                  fullContent = stageData.content;
+                  setGeneratedContent(fullContent);
+                }
               } else if (stageData.stage === 'keywords') {
                 setKeywords(stageData.content?.tags || []);
               }
@@ -297,7 +307,8 @@ export default function CreatePage() {
         }
       }
 
-      if (!fullContent) {
+      // 检查fullContent是否为undefined或null，允许空字符串
+      if (fullContent === undefined || fullContent === null) {
         throw new Error('内容重新生成失败，请重试');
       }
 
@@ -599,41 +610,35 @@ export default function CreatePage() {
                       value={customFeedback}
                       onChange={(e) => setCustomFeedback(e.target.value)}
                     />
-                    <button
-                      onClick={() => {
-                        if (customFeedback.trim()) {
-                          handleRegenerate(customFeedback);
-                          setCustomFeedback('');
-                        }
-                      }}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm transition-all duration-300"
-                    >
-                      应用
-                    </button>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  {selectedOptimizations.length > 0 && (
-                    <button
-                      onClick={() => {
-                        if (selectedOptimizations.length > 0) {
-                          handleRegenerate(selectedOptimizations.join('，'));
-                          setSelectedOptimizations([]);
-                        }
-                      }}
-                      className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm transition-all duration-300"
-                    >
-                      应用选中优化 ({selectedOptimizations.length})
-                    </button>
-                  )}
+                  <button
+                    onClick={async () => {
+                      // 合并处理：选中优化 + 自定义反馈
+                      const optimizations = [...selectedOptimizations];
+                      if (customFeedback.trim()) {
+                        optimizations.push(customFeedback.trim());
+                      }
+                      if (optimizations.length > 0) {
+                        await handleRegenerate(optimizations);
+                        setSelectedOptimizations([]);
+                        setCustomFeedback('');
+                      }
+                    }}
+                    className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-all duration-300"
+                  >
+                    应用优化 ({selectedOptimizations.length + (customFeedback.trim() ? 1 : 0)})
+                  </button>
                   <button
                     onClick={() => {
                       setSelectedOptimizations([]);
+                      setCustomFeedback('');
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm transition-all duration-300"
                   >
-                    清空选择
+                    清空
                   </button>
                 </div>
 
