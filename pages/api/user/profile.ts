@@ -44,8 +44,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error("Error getting profile:", error);
       res.status(500).json({ error: "Internal server error" });
     }
+  } else if (req.method === "PATCH") {
+    try {
+      const { userId, action } = req.body;
+      
+      if (!userId || !action) {
+        return res.status(400).json({ error: "Missing userId or action" });
+      }
+      
+      const service = new UserProfileService();
+      
+      switch (action) {
+        case "reset":
+          const resetSuccess = await service.resetProfile(userId);
+          if (!resetSuccess) {
+            return res.status(404).json({ error: "Profile not found" });
+          }
+          res.status(200).json({ success: true, message: "Profile reset successfully" });
+          break;
+        
+        case "updateFromCreations":
+          await service.updateProfileFromCreations(userId);
+          res.status(200).json({ success: true, message: "Profile updated from creations" });
+          break;
+        
+        default:
+          res.status(400).json({ error: "Invalid action" });
+      }
+    } catch (error) {
+      console.error("Error performing profile action:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   } else {
-    res.setHeader("Allow", ["GET", "POST"]);
+    res.setHeader("Allow", ["GET", "POST", "PATCH"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

@@ -10,10 +10,20 @@ export interface UserProfile {
   contentStyle: string;
   preferredLength: "short" | "medium" | "long";
   creativePersona?: {
+    personaSummary: string;
+    ageRange: string;
+    profession: string;
+    interests: string[];
+    contentStyle: string;
+    contentGoals: string[];
+    preferredLength: "short" | "medium" | "long";
+    creativePurpose: string;
+    targetAudience: string;
     personality: string;
     tone: string;
     uniqueAngle: string;
     contentStrengths: string[];
+    generatedAt?: string;
   };
   favoriteAccounts?: string[];
   createdAt: number;

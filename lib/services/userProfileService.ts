@@ -1,4 +1,4 @@
-import { UserProfile } from "../types";
+import { UserProfile, CreationRecord } from "../types";
 import { redis } from "../db/redis";
 import { callLongCatAPI } from "../api/longcat";
 
@@ -69,22 +69,48 @@ export class UserProfileService {
 
   async generateCreativePersona(userId: string): Promise<void> {
     const profile = await this.getProfile(userId);
-    if (!profile || profile.creativePersona) return;
+    if (!profile) return;
 
-    const prompt = `基于以下用户信息生成创作人格画像：
+    const contentGenerationService = new (require('./contentGenerationService').ContentGenerationService)();
+    const creations: CreationRecord[] = await contentGenerationService.getUserCreations(userId, 10);
+    
+    let prompt = `基于以下用户信息和历史创作记录，梳理用户的表达风格画像：
     年龄: ${profile.ageRange}
     职业: ${profile.profession}
     兴趣: ${profile.interests.join(", ")}
     专长: ${profile.expertise.join(", ")}
     创作目标: ${profile.contentGoals.join(", ")}
     表达风格: ${profile.contentStyle}
+    `;
     
-    请输出JSON格式：
+    if (creations.length > 0) {
+      prompt += `\n\n历史创作记录：\n`;
+      creations.forEach((creation: CreationRecord, index: number) => {
+        prompt += `创作 ${index + 1}：\n`;
+        prompt += `标题：${creation.title}\n`;
+        prompt += `内容：${creation.content.substring(0, 300)}...\n`;
+        if (creation.feedback && creation.feedback.length > 0) {
+          prompt += `用户反馈：${creation.feedback.map(f => f.customFeedback || f.presetFeedback).join('; ')}\n`;
+        }
+        prompt += `\n`;
+      });
+    }
+    
+    prompt += `\n请输出JSON格式，包含以下字段：
     {
-      "personality": "性格特点描述",
-      "tone": "表达风格",
-      "uniqueAngle": "独特创作角度",
-      "contentStrengths": ["优势1", "优势2", "优势3"]
+      "personaSummary": "表达风格总结",
+      "ageRange": "年龄范围",
+      "profession": "职业或身份",
+      "interests": ["兴趣1", "兴趣2"],
+      "contentStyle": "表达风格",
+      "contentGoals": ["创作目标1", "创作目标2"],
+      "preferredLength": "内容长度偏好",
+      "creativePurpose": "创作目的",
+      "targetAudience": "目标受众",
+      "personality": "风格记忆",
+      "tone": "表达基调",
+      "uniqueAngle": "独特视角",
+      "contentStrengths": ["优势1", "优势2"]
     }`;
 
     try {
@@ -94,14 +120,51 @@ export class UserProfileService {
       await this.updateProfile(userId, { creativePersona: persona });
     } catch (error) {
       console.error("Failed to generate creative persona:", error);
-      // 如果生成失败，使用默认创作人格
+      // 如果生成失败，使用默认表达风格画像
       const defaultPersona = {
+        personaSummary: "基于你的特点，AI正在为你梳理表达风格...",
+        ageRange: profile.ageRange,
+        profession: profile.profession,
+        interests: profile.interests,
+        contentStyle: profile.contentStyle,
+        contentGoals: profile.contentGoals,
+        preferredLength: profile.preferredLength,
+        creativePurpose: "记录生活，分享真实的自己",
+        targetAudience: "志同道合的朋友",
         personality: "亲切友好，注重生活品质，喜欢分享实用的生活技巧",
         tone: "温暖自然，口语化，像是和朋友聊天一样",
         uniqueAngle: "从个人经验出发，分享真实的生活感悟",
         contentStrengths: ["实用性强", "内容具体", "情感共鸣"]
       };
       await this.updateProfile(userId, { creativePersona: defaultPersona });
+    }
+  }
+
+  async updateProfileFromCreations(userId: string): Promise<void> {
+    // 基于历史创作和反馈更新用户表达风格画像
+    await this.generateCreativePersona(userId);
+  }
+
+  async resetProfile(userId: string): Promise<boolean> {
+    // 一键重置用户表达风格画像
+    try {
+      const profile = await this.getProfile(userId);
+      if (!profile) return false;
+      
+      // 保留基本信息，重置表达风格画像
+      const resetProfile = {
+        ...profile,
+        creativePersona: undefined,
+        updatedAt: Date.now()
+      };
+      
+      await redis.set(this.PROFILE_KEY(userId), JSON.stringify(resetProfile));
+      // 重新生成表达风格画像
+      await this.generateCreativePersona(userId);
+      return true;
+    } catch (error) {
+      console.error("Failed to reset profile:", error);
+      return false;
     }
   }
 

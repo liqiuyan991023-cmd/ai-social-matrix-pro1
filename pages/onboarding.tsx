@@ -226,7 +226,7 @@ export default function OnboardingPage() {
   
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <TopBar title="人设诊断" showIcon={false} />
+      <TopBar title="表达风格设置" showIcon={false} />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {!profileCreated ? (
@@ -235,8 +235,8 @@ export default function OnboardingPage() {
               <div className="w-24 h-24 bg-gradient-primary rounded-full flex items-center justify-center mb-6 shadow-soft-lg animate-pulse-soft">
                 <User className="w-11 h-11 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">挖掘你的专属人设</h2>
-              <p className="text-sm text-gray-600 text-center">回答几个问题，AI 为你定制小红书文风与选材方向。</p>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">探索你的表达风格</h2>
+              <p className="text-sm text-gray-600 text-center">回答几个问题，AI 为你梳理真实的表达习惯与创作偏好。</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
@@ -489,7 +489,7 @@ export default function OnboardingPage() {
                 disabled={isLoading}
                 className="w-full bg-red-500 text-white py-4 rounded-xl hover:shadow-soft-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
               >
-                {isLoading ? "生成中..." : "生成专属人设"}
+                {isLoading ? "生成中..." : "梳理表达风格"}
               </button>
             </form>
           </div>
@@ -500,14 +500,14 @@ export default function OnboardingPage() {
                 <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
                   <CheckCircle2 className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-semibold text-green-800">你的人设画像设置成功！</h3>
+                <h3 className="font-semibold text-green-800">你的表达风格设置成功！</h3>
               </div>
-              <p className="text-sm text-green-700 mt-2">你的专属创作风格已生成，现在可以开始创作了</p>
+              <p className="text-sm text-green-700 mt-2">你的表达风格已梳理完成，现在可以开始创作了</p>
             </div>
 
-            {/* 显示创作人格总结 */}
+            {/* 显示表达风格总结 */}
             <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">你的创作人格画像</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达风格画像</h3>
               <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
                 <p className="text-gray-800 leading-relaxed">
                   {(() => {
@@ -515,18 +515,18 @@ export default function OnboardingPage() {
                       const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
                       if (savedPersona) {
                         const personaData = JSON.parse(savedPersona);
-                        return personaData.personality || '基于你的特点，AI正在为你打造专属创作风格...';
+                        return personaData.personality || personaData.personaSummary || '基于你的特点，AI正在为你梳理表达风格...';
                       }
-                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                      return '基于你的特点，AI正在为你梳理表达风格...';
                     } catch (error) {
                       console.error('Error loading creative persona:', error);
-                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                      return '基于你的特点，AI正在为你梳理表达风格...';
                     }
                   })()}
                 </p>
               </div>
               
-              {/* 移除了重复的PersonaDisplay，因为下面已经显示了完整的创作人格画像 */}
+              {/* 移除了重复的PersonaDisplay，因为下面已经显示了完整的表达风格画像 */}
             </div>
 
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
@@ -541,7 +541,7 @@ export default function OnboardingPage() {
                 onClick={handleResetPersona}
                 className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
               >
-                重新设置人设画像
+                重新梳理表达风格
               </button>
             </div>
           </div>
@@ -552,14 +552,14 @@ export default function OnboardingPage() {
                 <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
                   <CheckCircle2 className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-semibold text-green-800">你的人设画像设置成功！</h3>
+                <h3 className="font-semibold text-green-800">你的表达风格设置成功！</h3>
               </div>
-              <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新设置人设画像</p>
+              <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新梳理表达风格</p>
             </div>
 
-            {/* 显示完整的创作人格总结 - 支持滚动和自动换行 */}
+            {/* 显示完整的表达风格总结 - 支持滚动和自动换行 */}
             <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in mb-6" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">你的创作人格画像</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达风格画像</h3>
               <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
                 <div className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 leading-relaxed break-words">
                   {((): string => {
@@ -567,26 +567,26 @@ export default function OnboardingPage() {
                       const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
                       if (savedPersona) {
                         const personaData = JSON.parse(savedPersona);
-                        return personaData.personality || personaData.personaSummary || '基于你的特点，AI正在为你打造专属创作风格...';
+                        return personaData.personality || personaData.personaSummary || '基于你的特点，AI正在为你梳理表达风格...';
                       }
-                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                      return '基于你的特点，AI正在为你梳理表达风格...';
                     } catch (error) {
                       console.error('Error loading creative persona:', error);
-                      return '基于你的特点，AI正在为你打造专属创作风格...';
+                      return '基于你的特点，AI正在为你梳理表达风格...';
                     }
                   })()}
                 </div>
               </div>
 
-              {/* 完整的8个维度展示 */}
+              {/* 表达风格维度展示 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">年龄范围</h4>
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">表达习惯</h4>
                   <p className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
                         const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).ageRange : '-';
+                        return savedPersona ? JSON.parse(savedPersona).contentStyle : '-';
                       } catch {
                         return '-';
                       }
@@ -595,21 +595,23 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">职业或主要身份</h4>
-                  <p className="text-sm text-gray-700 break-words">
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">创作偏好</h4>
+                  <div className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
                         const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).profession : '-';
+                        if (!savedPersona) return '-';
+                        const data = JSON.parse(savedPersona);
+                        return Array.isArray(data.contentGoals) ? data.contentGoals.join('、') : data.contentGoals || '-';
                       } catch {
                         return '-';
                       }
                     })()}
-                  </p>
+                  </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">平时关注内容</h4>
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">生活记录</h4>
                   <div className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
@@ -625,12 +627,12 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">表达风格</h4>
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">风格记忆</h4>
                   <p className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
                         const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).contentStyle : '-';
+                        return savedPersona ? JSON.parse(savedPersona).personality : '-';
                       } catch {
                         return '-';
                       }
@@ -639,19 +641,17 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">创作内容偏好</h4>
-                  <div className="text-sm text-gray-700 break-words">
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">个人成长轨迹</h4>
+                  <p className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
                         const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        if (!savedPersona) return '-';
-                        const data = JSON.parse(savedPersona);
-                        return Array.isArray(data.contentGoals) ? data.contentGoals.join('、') : data.contentGoals || '-';
+                        return savedPersona ? JSON.parse(savedPersona).creativePurpose : '-';
                       } catch {
                         return '-';
                       }
                     })()}
-                  </div>
+                  </p>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
@@ -673,12 +673,12 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">创作目的</h4>
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">职业或身份</h4>
                   <p className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
                         const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).creativePurpose : '-';
+                        return savedPersona ? JSON.parse(savedPersona).profession : '-';
                       } catch {
                         return '-';
                       }
@@ -687,7 +687,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">受众群体</h4>
+                  <h4 className="text-xs font-medium text-gray-500 mb-1">目标受众</h4>
                   <p className="text-sm text-gray-700 break-words">
                     {((): string => {
                       try {
@@ -714,7 +714,7 @@ export default function OnboardingPage() {
                 onClick={handleResetPersona}
                 className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
               >
-                重新设置人设画像
+                重新梳理表达风格
               </button>
             </div>
           </div>
@@ -724,14 +724,14 @@ export default function OnboardingPage() {
         {showConfirmDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">确认重新创建</h3>
-              <p className="text-sm text-gray-600 mb-4">重新创建人设将覆盖当前的创作人格，确定要继续吗？</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">确认重新梳理</h3>
+              <p className="text-sm text-gray-600 mb-4">重新梳理表达风格将更新当前的风格画像，确定要继续吗？</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirmDialog(false)}
                   className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
                 >
-                  取��
+                  取消
                 </button>
                 <button
                   onClick={handleRecreate}

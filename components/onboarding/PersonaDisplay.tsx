@@ -11,7 +11,7 @@ export default function PersonaDisplay({ persona, onEdit }: PersonaDisplayProps)
   return (
     <div className="bg-white rounded-xl shadow-card border border-gray-200 p-6 max-w-2xl mx-auto">
       <div className="flex justify-between items-start mb-4">
-        <h2 className="text-xl font-bold text-gray-800">你的创作人格画像</h2>
+        <h2 className="text-xl font-bold text-gray-800">你的表达风格画像</h2>
         {onEdit && (
           <button
             onClick={onEdit}
@@ -23,28 +23,32 @@ export default function PersonaDisplay({ persona, onEdit }: PersonaDisplayProps)
       </div>
 
       <div className="space-y-4">
-        {/* AI创作人格总结 - 支持滚动和自动换行 */}
+        {/* 表达风格总结 - 支持滚动和自动换行 */}
         <div className="bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-100 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">AI创作人格总结</h3>
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">表达风格总结</h3>
           <div className="max-h-48 overflow-y-auto text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
             {personaSummary}
           </div>
         </div>
 
-        {/* 完整的人设诊断维度展示 */}
+        {/* 表达风格维度展示 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">年龄范围</h4>
-            <p className="text-sm text-gray-700 break-words">{creativePersona.ageRange || '-'}</p>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">表达习惯</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.contentStyle || '-'}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">职业或主要身份</h4>
-            <p className="text-sm text-gray-700 break-words">{creativePersona.profession || '-'}</p>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">创作偏好</h4>
+            <div className="text-sm text-gray-700 break-words">
+              {Array.isArray(creativePersona.contentGoals)
+                ? creativePersona.contentGoals.join('、')
+                : creativePersona.contentGoals || '-'}
+            </div>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">平时关注内容</h4>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">生活记录</h4>
             <div className="text-sm text-gray-700 break-words">
               {Array.isArray(creativePersona.interests)
                 ? creativePersona.interests.join('、')
@@ -53,17 +57,13 @@ export default function PersonaDisplay({ persona, onEdit }: PersonaDisplayProps)
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">表达风格</h4>
-            <p className="text-sm text-gray-700 break-words">{creativePersona.contentStyle || '-'}</p>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">风格记忆</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.personality || '-'}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">创作内容偏好</h4>
-            <div className="text-sm text-gray-700 break-words">
-              {Array.isArray(creativePersona.contentGoals)
-                ? creativePersona.contentGoals.join('、')
-                : creativePersona.contentGoals || '-'}
-            </div>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">个人成长轨迹</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.creativePurpose || '-'}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
@@ -76,12 +76,12 @@ export default function PersonaDisplay({ persona, onEdit }: PersonaDisplayProps)
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">创作目的</h4>
-            <p className="text-sm text-gray-700 break-words">{creativePersona.creativeNeeds || '-'}</p>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">职业或身份</h4>
+            <p className="text-sm text-gray-700 break-words">{creativePersona.profession || '-'}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-medium text-gray-500 mb-1">受众群体</h4>
+            <h4 className="text-xs font-medium text-gray-500 mb-1">目标受众</h4>
             <p className="text-sm text-gray-700 break-words">{creativePersona.targetAudience || '-'}</p>
           </div>
         </div>

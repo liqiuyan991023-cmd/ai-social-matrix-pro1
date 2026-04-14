@@ -7,7 +7,7 @@ export class ContentGenerationService {
   private readonly USER_CREATIONS_KEY = (userId: string) => `user:${userId}:creations`;
 
   async generateTitle(userProfile: UserProfile, topic: any, regenerate?: string, idea?: string): Promise<string[]> {
-    const prompt = `基于以下信息为小红书笔记生成3个吸引人的标题：
+    const prompt = `基于以下信息生成3个自然真实的标题，体现用户的个人风格：
 
 用户信息：
 - 年龄：${userProfile.ageRange}
@@ -25,11 +25,11 @@ ${idea ? `用户创作想法：${idea}` : ""}
 ${regenerate ? `用户反馈：${regenerate}` : ""}
 
 要求：
-1. 符合小红书平台风格
-2. 吸引目标用户点击
+1. 自然真实，体现个人风格
+2. 简洁有力，有个人特色
 3. 包含关键词
-4. 简洁有力
-5. 有个人特色
+4. 不刻意追求爆款或平台优化
+5. 像是用户自己想出来的标题
 
 请输出3个标题，每个一行`;
 
@@ -38,7 +38,7 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
   }
 
   async generateContent(userProfile: UserProfile, topic: any, title: string, regenerate?: string, idea?: string): Promise<string> {
-    const prompt = `基于以下信息生成小红书笔记正文：
+    const prompt = `基于以下信息生成自然真实的内容，体现用户的个人表达风格：
 
 用户信息：
 - 年龄：${userProfile.ageRange}
@@ -60,14 +60,16 @@ ${idea ? `【重要】用户创作想法（必须严格遵循）：${idea}
 ${regenerate ? `用户反馈：${regenerate}` : ""}
 
 要求：
-1. ${idea ? "严格基于用户的创作想法来生成内容，不能生成无关的内容" : "符合小红书平台风格"}
-2. 语言口语化，亲切自然
+1. ${idea ? "严格基于用户的创作想法来生成内容，不能生成无关的内容" : "自然真实，体现个人风格"}
+2. 语言口语化，亲切自然，像是用户自己写的
 3. 结构清晰，有开头、中间、结尾
 4. 内容具体，有细节和个人感受
-5. 包含适当的emoji
+5. 包含适当的emoji（如果符合用户风格）
 6. 段落分明，易于阅读
 7. 符合用户的表达风格
-8. 长度符合用户偏好`;
+8. 长度符合用户偏好
+9. 不刻意追求平台优化或爆款效果
+10. 体现真实的个人表达，而非虚拟人设`;
 
     return await callLongCatAPI(prompt);
   }
