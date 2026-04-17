@@ -376,33 +376,36 @@ export default function CreatePage() {
                   <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="font-semibold text-sm text-gray-800">当前创作人格</h3>
+                  <h3 className="font-semibold text-sm text-gray-800">你的表达助手</h3>
                 </div>
 
-                {/* 显示完整的创作人格描述 */}
+                {/* 显示完整的表达助手描述 */}
                 <div className="mb-4">
                   <div className="bg-white rounded-xl p-4 border border-rose-200 shadow-soft-sm">
-                    <span className="text-gray-500 block mb-2 text-xs">AI创作人格总结</span>
+                    <span className="text-gray-500 block mb-2 text-xs">目前我对你的了解</span>
                     <div className="text-sm text-gray-800 leading-relaxed">
                       {(() => {
                         try {
-                          // 尝试从localStorage获取创作人格总结
                           const storedPersona = localStorage.getItem(`creativePersona_${userId}`);
                           if (storedPersona) {
                             const personaData = JSON.parse(storedPersona);
-                            // 拼接完整的创作人格描述
+                            if (personaData.personaSummary) {
+                              return personaData.personaSummary;
+                            }
                             if (personaData.personality) {
                               return personaData.personality;
                             }
                           }
-                          // 如果没有保存的创作人格，使用用户配置信息拼接
                           if (userProfile) {
-                            return `基于你的特点（${userProfile.profession}、${userProfile.ageRange}），你的优势在于${userProfile.interests?.slice(0, 2).join('、') || '生活经验丰富'}。建议采用${userProfile.contentStyle}的表达方式，重点关注${userProfile.contentGoals?.join('/')|| '用户互动'}，这样最容易引起目标受众的共鸣。`;
+                            return `你喜欢用${userProfile.contentStyle || '自然随性'}的语气分享日常，句子偏${userProfile.preferredLength === 'short' ? '简短' : userProfile.preferredLength === 'medium' ? '中等长度' : '较长'}，不喜欢夸张的表达。`;
                           }
-                          return '基于你的特点，AI正在为你打造专属创作风格...';
+                          return '我会按你的习惯帮你润色，也可以随时告诉我你的新想法～';
                         } catch (error) {
                           console.error('Error loading creative persona:', error);
-                          return '基于你的特点，AI正在为你打造专属创作风格...';
+                          if (userProfile) {
+                            return `你喜欢用${userProfile.contentStyle || '自然随性'}的语气分享日常，句子偏${userProfile.preferredLength === 'short' ? '简短' : userProfile.preferredLength === 'medium' ? '中等长度' : '较长'}，不喜欢夸张的表达。`;
+                          }
+                          return '我会按你的习惯帮你润色，也可以随时告诉我你的新想法～';
                         }
                       })()}
                     </div>
@@ -411,20 +414,20 @@ export default function CreatePage() {
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
-                    <span className="text-gray-500 block mb-1">风格</span>
-                    <span className="font-medium text-gray-800 text-sm">{userProfile.contentStyle}</span>
+                    <span className="text-gray-500 block mb-1">语气</span>
+                    <span className="font-medium text-gray-800 text-sm">{userProfile.contentStyle || '自然随性'}</span>
                   </div>
                   <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
-                    <span className="text-gray-500 block mb-1">内容偏好</span>
+                    <span className="text-gray-500 block mb-1">偏好</span>
                     <span className="font-medium text-gray-800 text-sm">{userProfile.contentGoals?.[0] || '生活分享'}</span>
                   </div>
                   <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
-                    <span className="text-gray-500 block mb-1">年龄范围</span>
-                    <span className="font-medium text-gray-800 text-sm">{userProfile.ageRange}</span>
+                    <span className="text-gray-500 block mb-1">句长</span>
+                    <span className="font-medium text-gray-800 text-sm">{userProfile.preferredLength === 'short' ? '短句' : userProfile.preferredLength === 'medium' ? '中句' : '长句'}</span>
                   </div>
                   <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
-                    <span className="text-gray-500 block mb-1">长度偏好</span>
-                    <span className="font-medium text-gray-800 text-sm">{userProfile.preferredLength === 'short' ? '短篇' : userProfile.preferredLength === 'medium' ? '中篇' : '长篇'}</span>
+                    <span className="text-gray-500 block mb-1">身份</span>
+                    <span className="font-medium text-gray-800 text-sm">{userProfile.profession || '创作者'}</span>
                   </div>
                 </div>
               </div>

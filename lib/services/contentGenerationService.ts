@@ -147,6 +147,15 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
       // Redis 不可用时，继续执行，不影响用户体验
     }
 
+    // 自动更新表达风格画像
+    try {
+      const userProfileService = new (require('./userProfileService').UserProfileService)();
+      await userProfileService.updateProfileFromCreations(userId);
+    } catch (error) {
+      console.error('Error updating profile from creation:', error);
+      // 失败不影响创作保存
+    }
+
     return creationId;
   }
 
@@ -210,6 +219,16 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
       };
 
       await redis.set(this.CREATION_KEY(creationId), JSON.stringify(updatedCreation));
+
+      // 自动更新表达风格画像
+      try {
+        const userProfileService = new (require('./userProfileService').UserProfileService)();
+        await userProfileService.updateProfileFromCreations(creation.userId);
+      } catch (error) {
+        console.error('Error updating profile from feedback:', error);
+        // 失败不影响反馈添加
+      }
+
       return updatedCreation;
     } catch (error) {
       console.error('Error adding feedback:', error);

@@ -153,8 +153,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const startTime = Date.now();
 
     try {
+      // 优化API调用参数，减少响应时间
       const response = await callLongCatAPI(prompt, {
-        max_tokens: 1500,
+        max_tokens: 1000, // 减少最大令牌数
         temperature: 0.7
       });
 

@@ -132,144 +132,13 @@ export default function HistoryPage() {
   };
 
   const handleFeedback = async (creation: Creation) => {
-    // 打开反馈对话框并收集反馈
-    const feedbackType = prompt('请选择反馈类型：\n1. 短一点\n2. 更干货点\n3. 加多点表情包\n4. 更像吐槽\n5. 自定义');
-
-    let feedbackContent = '';
-    switch (feedbackType) {
-      case '1':
-        feedbackContent = '短一点';
-        break;
-      case '2':
-        feedbackContent = '更干货点';
-        break;
-      case '3':
-        feedbackContent = '加多点表情包';
-        break;
-      case '4':
-        feedbackContent = '更像吐槽';
-        break;
-      case '5':
-        feedbackContent = prompt('请输入您的自定义反馈：') || '';
-        break;
-      default:
-        return;
-    }
-
-    try {
-      // 保存反馈到localStorage
-      const feedbackData: Feedback = {
-        creationId: creation.id,
-        userId: userId!,
-        feedbackType: feedbackType === '5' ? 'custom' : 'preset',
-        presetFeedback: feedbackType !== '5' ? feedbackContent : null,
-        customFeedback: feedbackType === '5' ? feedbackContent : null,
-        createdAt: Date.now(),
-      };
-
-      const existingFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]') as Feedback[];
-      existingFeedbacks.push(feedbackData);
-      localStorage.setItem('userFeedbacks', JSON.stringify(existingFeedbacks));
-
-      // 调用反馈API
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(feedbackData),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          alert('反馈已提交！AI创作总结将参考您的反馈进行优化。');
-
-          // 重新生成AI总结，包含反馈信息
-          await generateAiSummary(creations, existingFeedbacks);
-        } else {
-          throw new Error('反馈提交失败');
-        }
-      } else {
-        throw new Error('反馈提交失败');
-      }
-    } catch (error) {
-      console.error('Error submitting feedback:', error);
-      alert('反馈提交失败，请重试');
-    }
+    // 跳转到创作页面进行反馈
+    router.push(`/create?action=feedback&creationId=${creation.id}&content=${encodeURIComponent(creation.content.substring(0, 100))}`);
   };
 
   const handleOptimize = async (creation: Creation) => {
-    try {
-      // 获取该创作内容的反馈
-      const existingFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]') as Feedback[];
-      const creationFeedbacks = existingFeedbacks.filter((f: Feedback) => f.creationId === creation.id);
-
-      if (creationFeedbacks.length === 0) {
-        alert('暂无反馈信息，请先提供反馈后再优化');
-        return;
-      }
-
-      // 调用优化API
-      const response = await fetch('/api/content/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: userId!,
-          topicId: creation.topic?.id || 'default_topic',
-          regenerate: creationFeedbacks[creationFeedbacks.length - 1].customFeedback || creationFeedbacks[creationFeedbacks.length - 1].presetFeedback,
-        }),
-      });
-
-      if (response.ok) {
-        alert('优化版本已生成！');
-
-        // 读取优化后的内容
-        const reader = response.body?.getReader();
-        if (reader) {
-          const decoder = new TextDecoder();
-          let optimizedContent = '';
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n\n');
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') break;
-
-                try {
-                  const stageData = JSON.parse(data);
-                  if (stageData.stage === 'content') {
-                    optimizedContent = stageData.content;
-                  }
-                } catch (e) {
-                  console.error('Failed to parse SSE data:', e);
-                }
-              }
-            }
-          }
-
-          // 更新创作历史中的内容
-          const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
-          const updatedCreations = existingCreations.map((c: Creation) =>
-            c.id === creation.id ? { ...c, content: optimizedContent } : c
-          );
-          localStorage.setItem('userCreations', JSON.stringify(updatedCreations));
-
-          // 刷新页面显示
-          setCreations(updatedCreations);
-          alert('内容已优化完成！');
-        }
-      } else {
-        throw new Error('优化失败');
-      }
-    } catch (error) {
-      console.error('Error optimizing creation:', error);
-      alert('优化失败，请重试');
-    }
+    // 跳转到创作页面进行优化
+    router.push(`/create?action=optimize&creationId=${creation.id}&content=${encodeURIComponent(creation.content.substring(0, 100))}`);
   };
 
   // 删除创作记录
@@ -379,7 +248,7 @@ export default function HistoryPage() {
               <div className="w-9 h-9 bg-gradient-purple rounded-full flex items-center justify-center shadow-soft-md">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <h3 className="font-semibold text-base">AI 创作总结</h3>
+              <h3 className="font-semibold text-base">我的成长轨迹</h3>
             </div>
             <button
               onClick={() => setShowSummaryOptions(!showSummaryOptions)}
@@ -440,79 +309,93 @@ export default function HistoryPage() {
           )}
         </div>
 
-        {/* Creation History */}
+        {/* Creation History - 时间线展示 */}
         <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
                 <HistoryIcon className="w-4 h-4 text-white" />
               </div>
-              <h3 className="font-semibold text-lg">创作历史</h3>
+              <h3 className="font-semibold text-lg">我的创作时间轴</h3>
             </div>
             <span className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-full">
               共 {creations.length} 篇
             </span>
           </div>
-          <div className="space-y-4">
-            {creations.map((creation, index) => (
-              <div
-                key={creation.id}
-                className="bg-white rounded-2xl shadow-card border border-gray-200 p-5 hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 hover:border-primary"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-gray-800 flex-1 cursor-pointer hover:text-primary transition-colors" onClick={() => handleCreationClick(creation)}>{creation.title}</h3>
-                  <span className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-full ml-2">
-                    {creation.topic?.category || '生活方式'}
-                  </span>
-                </div>
-
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2 cursor-pointer hover:text-gray-700 transition-colors" onClick={() => handleCreationClick(creation)}>
-                  {creation.content}
-                </p>
-
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {creation.keywords?.tags?.slice(0, 3).map((tag: string, index: number) => (
-                    <span key={index} className="text-xs px-3 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 text-rose-600 rounded-full hover:shadow-soft-sm transition-all duration-200">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                  <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                  {creation.likes && (
-                    <span className="flex items-center gap-1">
-                      <span className="text-red-500">❤️</span> {creation.likes}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleFeedback(creation)}
-                    className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-accent hover:text-accent font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
+          <p className="text-sm text-gray-500 mb-4">记录你每一次分享的瞬间，看看自己的生活关注点有什么变化吧～</p>
+          <div className="relative">
+            {/* 时间线指示器 */}
+            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-rose-300 via-pink-300 to-rose-400"></div>
+            <div className="space-y-4">
+              {creations.map((creation, index) => (
+                <div key={creation.id} className="relative pl-10">
+                  {/* 时间线节点 */}
+                  <div className="absolute left-2.5 top-4 w-3 h-3 bg-gradient-primary rounded-full border-2 border-white shadow-soft-sm z-10"></div>
+                  <div
+                    className="bg-white rounded-2xl shadow-card border border-gray-200 p-5 hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 hover:border-primary"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <MessageSquare className="w-3 h-3" />
-                    反馈
-                  </button>
-                  <button
-                    onClick={() => handleOptimize(creation)}
-                    className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-purple-500 hover:text-purple-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    优化
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCreation(creation.id)}
-                    className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-red-500 hover:text-red-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    删除
-                  </button>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-semibold text-gray-800 flex-1 cursor-pointer hover:text-primary transition-colors" onClick={() => handleCreationClick(creation)}>{creation.title}</h3>
+                    </div>
+
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2 cursor-pointer hover:text-gray-700 transition-colors" onClick={() => handleCreationClick(creation)}>
+                      {creation.content}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {creation.keywords?.tags?.slice(0, 3).map((tag: string, index: number) => (
+                        <span key={index} className="text-xs px-3 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 text-rose-600 rounded-full hover:shadow-soft-sm transition-all duration-200">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <span>{new Date(creation.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                      {creation.likes && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-red-500">❤️</span> {creation.likes}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFeedback(creation);
+                        }}
+                        className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-accent hover:text-accent font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        反馈
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOptimize(creation);
+                        }}
+                        className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-purple-500 hover:text-purple-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        优化
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCreation(creation.id);
+                        }}
+                        className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-red-500 hover:text-red-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        删除
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

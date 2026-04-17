@@ -10,10 +10,10 @@ export default function BottomNav() {
     {
       label: '首页',
       icon: Home,
-      path: '/dashboard'
+      path: '/'
     },
     {
-      label: '人设',
+      label: '风格',
       icon: User,
       path: '/onboarding'
     },

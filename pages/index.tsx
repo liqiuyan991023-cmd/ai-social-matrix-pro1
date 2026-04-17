@@ -16,13 +16,19 @@ export default function HomePage() {
     const storedUserId = localStorage.getItem('userId');
 
     if (storedUserId) {
-      router.push('/dashboard');
+      router.push('/dashboard').catch(err => {
+        console.error('Navigation error:', err);
+        setIsRedirecting(false);
+      });
     } else {
-      router.push('/onboarding');
+      router.push('/onboarding').catch(err => {
+        console.error('Navigation error:', err);
+        setIsRedirecting(false);
+      });
     }
 
-    // 保留加载状态，用于即时反馈
-    setIsRedirecting(false);
+    // 跳转完成后再设置加载状态为 false
+    // 这里不立即设置，让加载状态保持直到跳转完成
   }, [router, isMounted]);
 
   if (isRedirecting) {

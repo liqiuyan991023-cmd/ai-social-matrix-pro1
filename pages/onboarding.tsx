@@ -57,6 +57,10 @@ export default function OnboardingPage() {
   // 使用新的generate-persona API生成创作人格
   const generatePersona = async (userInput: string): Promise<any> => {
     try {
+      // 添加超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+
       const response = await fetch('/api/generate-persona', {
         method: 'POST',
         headers: {
@@ -64,8 +68,11 @@ export default function OnboardingPage() {
         },
         body: JSON.stringify({
           userInput: userInput
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -78,7 +85,10 @@ export default function OnboardingPage() {
       }
 
       return data.data;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        throw new Error('请求超时，请稍后重试');
+      }
       console.error('Error generating persona:', error);
       throw error;
     }
@@ -141,7 +151,7 @@ export default function OnboardingPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create profile");
+        throw new Error("创建画像失败，请稍后重试");
       }
 
       const result = await response.json();
@@ -168,10 +178,22 @@ export default function OnboardingPage() {
       setProfileCreated(true);
       setIsLoading(false);
 
+      // 自动跳转到创作页面
+      setTimeout(() => {
+        router.push('/create');
+      }, 1000);
+
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating profile:", error);
-      alert(error instanceof Error ? error.message : '创建画像失败，请重试');
+      // 提供更友好的错误提示
+      let errorMessage = '创建画像失败，请稍后重试';
+      if (error.message.includes('超时')) {
+        errorMessage = '请求超时，请检查网络连接后重试';
+      } else if (error.message.includes('API')) {
+        errorMessage = '服务暂时不可用，请稍后重试';
+      }
+      alert(errorMessage);
       setIsLoading(false);
       throw error;
     }
@@ -500,14 +522,29 @@ export default function OnboardingPage() {
                 <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
                   <CheckCircle2 className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-semibold text-green-800">你的表达风格设置成功！</h3>
+                <h3 className="font-semibold text-green-800">你的表达习惯已梳理完成！</h3>
               </div>
-              <p className="text-sm text-green-700 mt-2">你的表达风格已梳理完成，现在可以开始创作了</p>
+              <div className="text-sm text-green-700 mt-3">
+                {(() => {
+                  try {
+                    const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                    if (savedPersona) {
+                      const personaData = JSON.parse(savedPersona);
+                      return personaData.personaSummary || personaData.personality || '你的表达习惯已梳理完成，现在可以开始创作了';
+                    }
+                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                  } catch (error) {
+                    console.error('Error loading creative persona:', error);
+                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                  }
+                })()}
+                <p className="mt-2 text-green-800">👉 这些只是你的"现在"，你想怎么变都可以，AI 会跟着你一起变～</p>
+              </div>
             </div>
 
             {/* 显示表达风格总结 */}
             <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达风格画像</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达习惯</h3>
               <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
                 <p className="text-gray-800 leading-relaxed">
                   {(() => {
@@ -515,33 +552,31 @@ export default function OnboardingPage() {
                       const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
                       if (savedPersona) {
                         const personaData = JSON.parse(savedPersona);
-                        return personaData.personality || personaData.personaSummary || '基于你的特点，AI正在为你梳理表达风格...';
+                        return personaData.personaSummary || personaData.personality || '基于你的特点，AI正在为你梳理表达习惯...';
                       }
-                      return '基于你的特点，AI正在为你梳理表达风格...';
+                      return '基于你的特点，AI正在为你梳理表达习惯...';
                     } catch (error) {
                       console.error('Error loading creative persona:', error);
-                      return '基于你的特点，AI正在为你梳理表达风格...';
+                      return '基于你的特点，AI正在为你梳理表达习惯...';
                     }
                   })()}
                 </p>
               </div>
-              
-              {/* 移除了重复的PersonaDisplay，因为下面已经显示了完整的表达风格画像 */}
             </div>
 
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
               <button
                 onClick={() => router.push("/create")}
-                className="w-full bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                className="w-full bg-rose-500 text-white py-3.5 rounded-xl hover:bg-rose-600 font-medium transition-all duration-300"
               >
                 开始创作
               </button>
 
               <button
                 onClick={handleResetPersona}
-                className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
+                className="w-full border-2 border-rose-500 text-rose-500 py-3.5 rounded-xl hover:bg-rose-50 font-medium transition-all duration-300"
               >
-                重新梳理表达风格
+                随时更新我的偏好
               </button>
             </div>
           </div>
@@ -552,14 +587,29 @@ export default function OnboardingPage() {
                 <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
                   <CheckCircle2 className="h-4 w-4 text-white" />
                 </div>
-                <h3 className="font-semibold text-green-800">你的表达风格设置成功！</h3>
+                <h3 className="font-semibold text-green-800">你的表达习惯已梳理完成！</h3>
               </div>
-              <p className="text-sm text-green-700 mt-2">你可以开始创作了，或重新梳理表达风格</p>
+              <div className="text-sm text-green-700 mt-3">
+                {(() => {
+                  try {
+                    const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
+                    if (savedPersona) {
+                      const personaData = JSON.parse(savedPersona);
+                      return personaData.personaSummary || personaData.personality || '你的表达习惯已梳理完成，现在可以开始创作了';
+                    }
+                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                  } catch (error) {
+                    console.error('Error loading creative persona:', error);
+                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                  }
+                })()}
+                <p className="mt-2 text-green-800">👉 这些只是你的"现在"，你想怎么变都可以，AI 会跟着你一起变～</p>
+              </div>
             </div>
 
             {/* 显示完整的表达风格总结 - 支持滚动和自动换行 */}
             <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in mb-6" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达风格画像</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达习惯</h3>
               <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
                 <div className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 leading-relaxed break-words">
                   {((): string => {
@@ -567,12 +617,12 @@ export default function OnboardingPage() {
                       const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
                       if (savedPersona) {
                         const personaData = JSON.parse(savedPersona);
-                        return personaData.personality || personaData.personaSummary || '基于你的特点，AI正在为你梳理表达风格...';
+                        return personaData.personaSummary || personaData.personality || '基于你的特点，AI正在为你梳理表达习惯...';
                       }
-                      return '基于你的特点，AI正在为你梳理表达风格...';
+                      return '基于你的特点，AI正在为你梳理表达习惯...';
                     } catch (error) {
                       console.error('Error loading creative persona:', error);
-                      return '基于你的特点，AI正在为你梳理表达风格...';
+                      return '基于你的特点，AI正在为你梳理表达习惯...';
                     }
                   })()}
                 </div>
@@ -705,16 +755,16 @@ export default function OnboardingPage() {
             <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
               <button
                 onClick={() => router.push("/dashboard")}
-                className="w-full bg-gradient-primary text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                className="w-full bg-rose-500 text-white py-3.5 rounded-xl hover:bg-rose-600 font-medium transition-all duration-300"
               >
                 开始创作
               </button>
 
               <button
                 onClick={handleResetPersona}
-                className="w-full border-2 border-primary text-primary py-3.5 rounded-xl hover:bg-primary/5 font-medium transition-all duration-300"
+                className="w-full border-2 border-rose-500 text-rose-500 py-3.5 rounded-xl hover:bg-rose-50 font-medium transition-all duration-300"
               >
-                重新梳理表达风格
+                随时更新我的偏好
               </button>
             </div>
           </div>
@@ -724,8 +774,8 @@ export default function OnboardingPage() {
         {showConfirmDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">确认重新梳理</h3>
-              <p className="text-sm text-gray-600 mb-4">重新梳理表达风格将更新当前的风格画像，确定要继续吗？</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">确认更新偏好</h3>
+              <p className="text-sm text-gray-600 mb-4">更新表达偏好将覆盖当前的设置，确定要继续吗？</p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowConfirmDialog(false)}
