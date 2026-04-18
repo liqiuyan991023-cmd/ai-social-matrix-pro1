@@ -31,7 +31,10 @@ export default function BottomNav() {
 
   const handleNavClick = (path: string) => {
     // 确保正确的导航，避免跳回首页
-    router.push(path);
+    console.log('Navigating to:', path);
+    router.push(path).catch(err => {
+      console.error('Navigation error:', err);
+    });
   };
 
   return (
