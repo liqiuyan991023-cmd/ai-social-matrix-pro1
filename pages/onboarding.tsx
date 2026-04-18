@@ -38,17 +38,41 @@ export default function OnboardingPage() {
         const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
         const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
 
-        if (storedPersona || storedProfile) {
-          // 如果已存在用户画像，直接显示成功界面
-          setUserId(storedUserId);
-          setProfileCreated(true);
-          return;
+        if (storedPersona) {
+          try {
+            const personaData = JSON.parse(storedPersona);
+            // 检查数据是否有效（包含必要的字段）
+            if (personaData.personality || personaData.personaSummary) {
+              // 数据有效，显示成功界面
+              setUserId(storedUserId);
+              setProfileCreated(true);
+              return;
+            }
+          } catch (e) {
+            // JSON 解析失败，清除无效数据
+            console.error('Failed to parse stored persona:', e);
+            localStorage.removeItem(`creativePersona_${storedUserId}`);
+          }
+        }
+
+        if (storedProfile) {
+          try {
+            const profileData = JSON.parse(storedProfile);
+            // 如果有 profile 但没有有效的 persona，清除 profile
+            if (!localStorage.getItem(`creativePersona_${storedUserId}`)) {
+              localStorage.removeItem(`userProfile_${storedUserId}`);
+            }
+          } catch (e) {
+            console.error('Failed to parse stored profile:', e);
+            localStorage.removeItem(`userProfile_${storedUserId}`);
+          }
         }
       }
 
       // 生成新的用户ID
       const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       setUserId(newUserId);
+      setProfileCreated(false);
     };
 
     initializeOnboarding();
@@ -57,10 +81,6 @@ export default function OnboardingPage() {
   // 使用新的generate-persona API生成创作人格
   const generatePersona = async (userInput: string): Promise<any> => {
     try {
-      // 添加超时控制
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
-
       const response = await fetch('/api/generate-persona', {
         method: 'POST',
         headers: {
@@ -68,11 +88,8 @@ export default function OnboardingPage() {
         },
         body: JSON.stringify({
           userInput: userInput
-        }),
-        signal: controller.signal
+        })
       });
-
-      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -86,11 +103,45 @@ export default function OnboardingPage() {
 
       return data.data;
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        throw new Error('请求超时，请稍后重试');
-      }
       console.error('Error generating persona:', error);
-      throw error;
+      
+      // 生成默认数据作为备用
+      const userLines = userInput.split('\n');
+      const userData: any = {};
+      userLines.forEach(line => {
+        const [key, value] = line.split('：');
+        if (key && value) {
+          userData[key.trim()] = value.trim();
+        }
+      });
+
+      const ageRange = userData['年龄范围'] || '26-35岁';
+      const profession = userData['职业'] || '创作者';
+      const interests = userData['兴趣'] || '生活分享';
+      const contentGoals = userData['内容偏好'] || '生活分享';
+      const contentStyle = userData['表达风格'] || '亲切自然';
+      const creativePurpose = userData['创作目的'] || '分享生活经验';
+
+      const interestsArray = interests.includes('、') || interests.includes(',')
+        ? interests.split(/[、,]/).map((i: string) => i.trim())
+        : [interests];
+
+      const contentGoalsArray = contentGoals.includes('、') || contentGoals.includes(',')
+        ? contentGoals.split(/[、,]/).map((i: string) => i.trim())
+        : [contentGoals];
+
+      return {
+        ageRange,
+        profession,
+        interests: interestsArray,
+        contentStyle,
+        contentGoals: contentGoalsArray,
+        preferredLength: userData['内容长度'] || 'medium',
+        creativePurpose,
+        targetAudience: '对相关内容感兴趣的读者',
+        personaSummary: `基于你的个人特点（${profession}、${ageRange}），我为你定制了专属的创作风格。你的优势在于${interests}，建议重点关注${contentGoals}，采用${contentStyle}的表达方式，以${creativePurpose}为创作目的，这样最容易吸引对你的内容感兴趣的读者群体。`,
+        personality: `你是一个${profession}，喜欢分享${interestsArray.join('、')}相关内容。你的表达风格${contentStyle}，偏好${userData['内容长度'] === 'short' ? '短小精悍' : userData['内容长度'] === 'long' ? '详细深入' : '中等长度'}的内容形式。`
+      };
     }
   };
 
@@ -160,9 +211,10 @@ export default function OnboardingPage() {
       // 存储用户画像到localStorage
       localStorage.setItem(`userProfile_${userId}`, JSON.stringify(result.profile));
       // 保存AI生成的创作人格到localStorage
-      localStorage.setItem(`creativePersona_${userId}`, JSON.stringify({
+      const savedPersonaData = {
         userId: userId,
         personaSummary: personaData.personaSummary,
+        personality: personaData.personality,
         ageRange: personaData.ageRange,
         profession: personaData.profession,
         interests: personaData.interests,
@@ -172,7 +224,8 @@ export default function OnboardingPage() {
         creativePurpose: personaData.creativePurpose,
         targetAudience: personaData.targetAudience,
         generatedAt: new Date().toISOString()
-      }));
+      };
+      localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(savedPersonaData));
 
       // 设置成功状态并停止加载
       setProfileCreated(true);
@@ -524,43 +577,24 @@ export default function OnboardingPage() {
                 </div>
                 <h3 className="font-semibold text-green-800">你的表达习惯已梳理完成！</h3>
               </div>
-              <div className="text-sm text-green-700 mt-3">
+              <div className="text-sm text-green-700 mt-3 space-y-2">
                 {(() => {
                   try {
                     const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
                     if (savedPersona) {
                       const personaData = JSON.parse(savedPersona);
-                      return personaData.personaSummary || personaData.personality || '你的表达习惯已梳理完成，现在可以开始创作了';
+                      const summary = personaData.personaSummary || personaData.personality || '';
+                      if (summary) {
+                        return <p className="leading-relaxed">{summary}</p>;
+                      }
                     }
-                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                    return <p className="text-gray-500 italic">正在加载你的表达习惯...</p>;
                   } catch (error) {
                     console.error('Error loading creative persona:', error);
-                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                    return <p className="text-gray-500 italic">加载失败，请刷新页面重试</p>;
                   }
                 })()}
                 <p className="mt-2 text-green-800">👉 这些只是你的"现在"，你想怎么变都可以，AI 会跟着你一起变～</p>
-              </div>
-            </div>
-
-            {/* 显示表达风格总结 */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达习惯</h3>
-              <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
-                <p className="text-gray-800 leading-relaxed">
-                  {(() => {
-                    try {
-                      const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                      if (savedPersona) {
-                        const personaData = JSON.parse(savedPersona);
-                        return personaData.personaSummary || personaData.personality || '基于你的特点，AI正在为你梳理表达习惯...';
-                      }
-                      return '基于你的特点，AI正在为你梳理表达习惯...';
-                    } catch (error) {
-                      console.error('Error loading creative persona:', error);
-                      return '基于你的特点，AI正在为你梳理表达习惯...';
-                    }
-                  })()}
-                </p>
               </div>
             </div>
 
@@ -589,166 +623,24 @@ export default function OnboardingPage() {
                 </div>
                 <h3 className="font-semibold text-green-800">你的表达习惯已梳理完成！</h3>
               </div>
-              <div className="text-sm text-green-700 mt-3">
+              <div className="text-sm text-green-700 mt-3 space-y-2">
                 {(() => {
                   try {
                     const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
                     if (savedPersona) {
                       const personaData = JSON.parse(savedPersona);
-                      return personaData.personaSummary || personaData.personality || '你的表达习惯已梳理完成，现在可以开始创作了';
+                      const summary = personaData.personaSummary || personaData.personality || '';
+                      if (summary) {
+                        return <p className="leading-relaxed">{summary}</p>;
+                      }
                     }
-                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                    return <p className="text-gray-500 italic">正在加载你的表达习惯...</p>;
                   } catch (error) {
                     console.error('Error loading creative persona:', error);
-                    return '你的表达习惯已梳理完成，现在可以开始创作了';
+                    return <p className="text-gray-500 italic">加载失败，请刷新页面重试</p>;
                   }
                 })()}
                 <p className="mt-2 text-green-800">👉 这些只是你的"现在"，你想怎么变都可以，AI 会跟着你一起变～</p>
-              </div>
-            </div>
-
-            {/* 显示完整的表达风格总结 - 支持滚动和自动换行 */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 animate-fade-in mb-6" style={{ animationDelay: '100ms' }}>
-              <h3 className="text-lg font-bold text-gray-800 mb-4">你的表达习惯</h3>
-              <div className="bg-gradient-to-r from-pink-50 to-rose-50 border border-rose-100 rounded-xl p-5 mb-4">
-                <div className="max-h-96 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 leading-relaxed break-words">
-                  {((): string => {
-                    try {
-                      const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                      if (savedPersona) {
-                        const personaData = JSON.parse(savedPersona);
-                        return personaData.personaSummary || personaData.personality || '基于你的特点，AI正在为你梳理表达习惯...';
-                      }
-                      return '基于你的特点，AI正在为你梳理表达习惯...';
-                    } catch (error) {
-                      console.error('Error loading creative persona:', error);
-                      return '基于你的特点，AI正在为你梳理表达习惯...';
-                    }
-                  })()}
-                </div>
-              </div>
-
-              {/* 表达风格维度展示 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">表达习惯</h4>
-                  <p className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).contentStyle : '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">创作偏好</h4>
-                  <div className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        if (!savedPersona) return '-';
-                        const data = JSON.parse(savedPersona);
-                        return Array.isArray(data.contentGoals) ? data.contentGoals.join('、') : data.contentGoals || '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">生活记录</h4>
-                  <div className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        if (!savedPersona) return '-';
-                        const data = JSON.parse(savedPersona);
-                        return Array.isArray(data.interests) ? data.interests.join('、') : data.interests || '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">风格记忆</h4>
-                  <p className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).personality : '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">个人成长轨迹</h4>
-                  <p className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).creativePurpose : '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">内容长度</h4>
-                  <p className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        if (!savedPersona) return '-';
-                        const data = JSON.parse(savedPersona);
-                        return data.preferredLength === 'short' ? '短篇（300-500字）' :
-                               data.preferredLength === 'medium' ? '中篇（500-800字）' :
-                               data.preferredLength === 'long' ? '长篇（800-1200字）' : '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">职业或身份</h4>
-                  <p className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).profession : '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <h4 className="text-xs font-medium text-gray-500 mb-1">目标受众</h4>
-                  <p className="text-sm text-gray-700 break-words">
-                    {((): string => {
-                      try {
-                        const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                        return savedPersona ? JSON.parse(savedPersona).targetAudience : '-';
-                      } catch {
-                        return '-';
-                      }
-                    })()}
-                  </p>
-                </div>
               </div>
             </div>
 

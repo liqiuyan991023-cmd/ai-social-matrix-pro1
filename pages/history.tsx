@@ -133,17 +133,17 @@ export default function HistoryPage() {
 
   const handleFeedback = async (creation: Creation) => {
     // 跳转到创作页面进行反馈
-    router.push(`/create?action=feedback&creationId=${creation.id}&content=${encodeURIComponent(creation.content.substring(0, 100))}`);
+    router.push(`/create?action=feedback&creationId=${creation.id}&content=${encodeURIComponent(creation.title || creation.content.substring(0, 100))}`);
   };
 
   const handleOptimize = async (creation: Creation) => {
     // 跳转到创作页面进行优化
-    router.push(`/create?action=optimize&creationId=${creation.id}&content=${encodeURIComponent(creation.content.substring(0, 100))}`);
+    router.push(`/create?action=optimize&creationId=${creation.id}&content=${encodeURIComponent(creation.title || creation.content.substring(0, 100))}`);
   };
 
   // 删除创作记录
   const handleDeleteCreation = (creationId: string) => {
-    if (confirm('确定要删除这条创作记录吗？此操作不可恢复。')) {
+    if (confirm('确定要删除这篇笔记吗？删除后它将从你的创作时间轴中移除。')) {
       try {
         const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
         const updatedCreations = existingCreations.filter((c: Creation) => c.id !== creationId);
@@ -364,22 +364,28 @@ export default function HistoryPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleFeedback(creation);
+                          // 弹出轻面板，告知用户反馈的作用
+                          if (confirm('💡 告诉 AI 你喜欢 / 不喜欢这篇笔记的地方，它会慢慢熟悉你的语气和偏好～\n\n点击确定后，你将进入反馈页面。')) {
+                            handleFeedback(creation);
+                          }
                         }}
                         className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-accent hover:text-accent font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
                       >
                         <MessageSquare className="w-3 h-3" />
-                        反馈
+                        让 AI 更懂你
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOptimize(creation);
+                          // 弹出提示，告知用户优化的作用
+                          if (confirm('会基于这篇笔记的主题和你的反馈，生成一个新版本，原笔记会保留在历史中。\n\n点击确定后，你将进入内容生成页。')) {
+                            handleOptimize(creation);
+                          }
                         }}
                         className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-purple-500 hover:text-purple-600 font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1 text-xs"
                       >
                         <RefreshCw className="w-3 h-3" />
-                        优化
+                        基于这篇重写
                       </button>
                       <button
                         onClick={(e) => {

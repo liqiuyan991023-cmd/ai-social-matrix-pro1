@@ -1,6 +1,7 @@
 import { UserProfile, CreationRecord, Feedback } from "../types";
 import { callLongCatAPI } from "../api/longcat";
 import { redis } from "../db/redis";
+import { UserProfileService } from "./userProfileService";
 
 export class ContentGenerationService {
   private readonly CREATION_KEY = (creationId: string) => `creation:${creationId}`;
@@ -33,8 +34,22 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
 
 请输出3个标题，每个一行`;
 
-    const response = await callLongCatAPI(prompt);
-    return response.split('\n').filter(line => line.trim());
+    try {
+      const response = await callLongCatAPI(prompt);
+      const titles = response.split('\n').filter(line => line.trim());
+      if (titles.length === 0) {
+        throw new Error('No titles generated');
+      }
+      return titles;
+    } catch (error) {
+      console.error('Error generating title:', error);
+      // 返回默认标题
+      return [
+        `记录${idea || topic.title}的美好瞬间`,
+        `分享我的${idea || topic.title}体验`,
+        `${idea || topic.title}的真实感受`
+      ];
+    }
   }
 
   async generateContent(userProfile: UserProfile, topic: any, title: string, regenerate?: string, idea?: string): Promise<string> {
@@ -149,7 +164,7 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
 
     // 自动更新表达风格画像
     try {
-      const userProfileService = new (require('./userProfileService').UserProfileService)();
+      const userProfileService = new UserProfileService();
       await userProfileService.updateProfileFromCreations(userId);
     } catch (error) {
       console.error('Error updating profile from creation:', error);

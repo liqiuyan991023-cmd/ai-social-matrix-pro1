@@ -170,7 +170,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         personaData = JSON.parse(cleanedResponse);
 
         // 验证必需字段
-        const requiredFields = ['ageRange', 'profession', 'interests', 'contentStyle', 'personality'];
+        const requiredFields = ['ageRange', 'profession', 'interests', 'contentStyle', 'preferredLength', 'creativePurpose', 'targetAudience', 'personaSummary'];
         for (const field of requiredFields) {
           if (!personaData[field]) {
             throw new Error(`Missing required field: ${field}`);
@@ -187,7 +187,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('[GENERATE-PERSONA-API] Raw response:', response);
 
         // 如果解析失败，基于用户输入生成一个合理的默认响应
-        // 解析用户输入的各个字段
         const userLines = userInput.split('\n');
         const userData: any = {};
         userLines.forEach(line => {
@@ -197,7 +196,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         });
 
-        // 构建个性化的人格总结
         const ageRange = userData['年龄范围'] || '26-35岁';
         const profession = userData['职业'] || '创作者';
         const interests = userData['兴趣'] || '生活分享';
@@ -205,12 +203,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const contentStyle = userData['表达风格'] || '亲切自然';
         const creativePurpose = userData['创作目的'] || userData['创作需求'] || '分享生活经验';
 
-        // 将兴趣字符串转换为数组
         const interestsArray = interests.includes('、') || interests.includes(',')
           ? interests.split(/[、,]/).map((i: string) => i.trim())
           : [interests];
 
-        // 将内容偏好字符串转换为数组
         const contentGoalsArray = contentGoals.includes('、') || contentGoals.includes(',')
           ? contentGoals.split(/[、,]/).map((i: string) => i.trim())
           : [contentGoals];
@@ -224,8 +220,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           preferredLength: userData['内容长度'] || 'medium',
           creativePurpose,
           targetAudience: '对相关内容感兴趣的读者',
-          personaSummary: `基于你的个人特点（${profession}、${ageRange}），我为你定制了专属的创作风格。你的优势在于${interests}，建议重点关注${contentGoals}，采用${contentStyle}的表达方式，以${creativePurpose}为创作目的，这样最容易吸引对你的内容感兴趣的读者群体。`
+          personaSummary: `基于你的个人特点（${profession}、${ageRange}），我为你定制了专属的创作风格。你的优势在于${interests}，建议重点关注${contentGoals}，采用${contentStyle}的表达方式，以${creativePurpose}为创作目的，这样最容易吸引对你的内容感兴趣的读者群体。`,
+          personality: `你是一个${profession}，喜欢分享${interestsArray.join('、')}相关内容。你的表达风格${contentStyle}，偏好${userData['内容长度'] === 'short' ? '短小精悍' : userData['内容长度'] === 'long' ? '详细深入' : '中等长度'}的内容形式。`
         };
+      }
+
+      // 确保personality字段有值
+      if (!personaData.personality && personaData.personaSummary) {
+        personaData.personality = personaData.personaSummary;
       }
 
       // 返回成功响应

@@ -41,25 +41,35 @@ export default function CreatePage() {
     setUserId(storedUserId);
     // 同时从localStorage和API获取用户画像，确保加载成功
     loadUserProfile(storedUserId);
+
+    // 处理从历史页面跳转过来的参数
+    const { action, creationId, content } = router.query;
+    if (action && content) {
+      const decodedContent = decodeURIComponent(content as string);
+      setIdea(decodedContent);
+      
+      // 如果是优化操作，直接生成内容
+      if (action === 'optimize') {
+        // 延迟执行，确保userProfile已加载
+        setTimeout(() => {
+          handleGenerate();
+        }, 500);
+      }
+    }
   }, [router, isMounted]);
 
   const loadUserProfile = async (userId: string) => {
-    if (typeof window === 'undefined') return;
-
     try {
       setIsLoadingProfile(true);
-      // 首先尝试从localStorage获取
       const storedProfile = localStorage.getItem(`userProfile_${userId}`);
       if (storedProfile) {
         const parsedProfile = JSON.parse(storedProfile);
         setUserProfile(parsedProfile);
       }
 
-      // 同时调用API获取最新数据
       await fetchUserProfile(userId);
     } catch (error) {
       console.error('Error loading user profile:', error);
-      // 即使出错，也尝试从localStorage获取作为备用
       const storedProfile = localStorage.getItem(`userProfile_${userId}`);
       if (storedProfile) {
         const parsedProfile = JSON.parse(storedProfile);
@@ -71,20 +81,16 @@ export default function CreatePage() {
   };
 
   const fetchUserProfile = async (userId: string) => {
-    if (typeof window === 'undefined') return null;
-
     try {
       setIsLoadingProfile(true);
       const response = await fetch(`/api/user/profile?userId=${userId}`);
       if (response.ok) {
         const data = await response.json();
         setUserProfile(data.profile);
-        // 保存到localStorage作为备份
         localStorage.setItem(`userProfile_${userId}`, JSON.stringify(data.profile));
         return data.profile;
       }
 
-      // API失败时，尝试从localStorage获取
       const storedProfile = localStorage.getItem(`userProfile_${userId}`);
       if (storedProfile) {
         const parsedProfile = JSON.parse(storedProfile);
@@ -95,7 +101,6 @@ export default function CreatePage() {
       return null;
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      // 网络错误时，尝试从localStorage获取
       const storedProfile = localStorage.getItem(`userProfile_${userId}`);
       if (storedProfile) {
         const parsedProfile = JSON.parse(storedProfile);
@@ -220,10 +225,14 @@ export default function CreatePage() {
     }
   };
 
+  const [saved, setSaved] = useState(false);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    // 弹出轻提示
+    alert('已复制到剪贴板，快去发布吧～');
   };
 
   // 重新生成内容，基于反馈优化
@@ -322,11 +331,11 @@ export default function CreatePage() {
     }
   };
 
-  if (!userId || isLoadingProfile) {
+  if (!userId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
           <p className="mt-4 text-gray-600">加载中...</p>
         </div>
       </div>
@@ -340,23 +349,23 @@ export default function CreatePage() {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {!hasResult ? (
           <div className="space-y-6 animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 hover:shadow-card-hover transition-shadow duration-300">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
-                  <PenSquare className="w-4 h-4 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
+                  <PenSquare className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-semibold text-base text-gray-800">今天想写点什么？</span>
+                <span className="font-semibold text-lg text-gray-800">今天想写点什么？</span>
               </div>
               <textarea
                 placeholder="输入一个简单的想法，比如：买了一个超好用的平价键盘..."
-                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary min-h-[150px] resize-none text-gray-800 font-medium leading-relaxed transition-all duration-200"
+                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-red-200 focus:border-red-500 min-h-[150px] resize-none text-gray-800 font-medium leading-relaxed transition-all duration-200"
                 value={idea}
                 onChange={(e) => setIdea(e.target.value)}
               />
               <button
                 onClick={handleGenerate}
                 disabled={!idea.trim() || isGenerating}
-                className="w-full mt-4 bg-red-500 text-white py-3.5 rounded-xl hover:shadow-soft-lg font-medium disabled:bg-red-300 disabled:text-white disabled:opacity-90 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                className="w-full mt-4 bg-gradient-to-r from-red-500 to-pink-500 text-white py-3.5 rounded-xl hover:shadow-lg font-medium disabled:bg-red-300 disabled:text-white disabled:opacity-90 disabled:cursor-not-allowed transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-md"
               >
                 {isGenerating ? (
                   <span className="flex items-center justify-center gap-2 text-white font-medium">
@@ -371,17 +380,17 @@ export default function CreatePage() {
             </div>
             
             {userProfile && (
-              <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100 p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-9 h-9 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft-md">
-                    <User className="w-4 h-4 text-white" />
+              <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100 p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
+                    <User className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="font-semibold text-sm text-gray-800">你的表达助手</h3>
+                  <h3 className="font-semibold text-base text-gray-800">你的表达助手</h3>
                 </div>
 
                 {/* 显示完整的表达助手描述 */}
                 <div className="mb-4">
-                  <div className="bg-white rounded-xl p-4 border border-rose-200 shadow-soft-sm">
+                  <div className="bg-white rounded-xl p-4 border border-rose-200 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <span className="text-gray-500 block mb-2 text-xs">目前我对你的了解</span>
                     <div className="text-sm text-gray-800 leading-relaxed">
                       {(() => {
@@ -413,19 +422,19 @@ export default function CreatePage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
+                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <span className="text-gray-500 block mb-1">语气</span>
                     <span className="font-medium text-gray-800 text-sm">{userProfile.contentStyle || '自然随性'}</span>
                   </div>
-                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
+                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <span className="text-gray-500 block mb-1">偏好</span>
                     <span className="font-medium text-gray-800 text-sm">{userProfile.contentGoals?.[0] || '生活分享'}</span>
                   </div>
-                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
+                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <span className="text-gray-500 block mb-1">句长</span>
                     <span className="font-medium text-gray-800 text-sm">{userProfile.preferredLength === 'short' ? '短句' : userProfile.preferredLength === 'medium' ? '中句' : '长句'}</span>
                   </div>
-                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-soft-sm">
+                  <div className="bg-white rounded-xl p-3 border border-rose-200 shadow-sm hover:shadow-md transition-shadow duration-300">
                     <span className="text-gray-500 block mb-1">身份</span>
                     <span className="font-medium text-gray-800 text-sm">{userProfile.profession || '创作者'}</span>
                   </div>
@@ -435,31 +444,31 @@ export default function CreatePage() {
           </div>
         ) : (
           <div className="animate-fade-in space-y-6">
-            <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-6 hover:shadow-card-hover transition-shadow duration-300">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-md">
-                  <Check className="w-4 h-4 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-md">
+                  <Check className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-base text-gray-800">生成成功！</h3>
+                <h3 className="font-semibold text-lg text-gray-800">生成成功！</h3>
               </div>
 
               {/* 修复内容截断问题：添加CSS支持滚动、自动换行 */}
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 mb-6 p-4 bg-gray-50 rounded-xl max-h-96 overflow-y-auto break-words">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 mb-6 p-4 bg-gray-50 rounded-xl max-h-96 overflow-y-auto break-words border border-gray-100">
                 {generatedContent}
               </div>
 
               <div className="flex flex-wrap gap-2 mb-6">
                 {keywords.map((keyword, index) => (
-                  <span key={index} className="px-3 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 text-rose-600 rounded-full text-xs font-medium hover:shadow-soft-sm transition-all duration-200">
+                  <span key={index} className="px-3 py-1.5 bg-gradient-to-r from-rose-100 to-pink-100 text-rose-600 rounded-full text-xs font-medium hover:shadow-md transition-all duration-200 transform hover:-translate-y-0.5">
                     #{keyword}
                   </span>
                 ))}
               </div>
 
-              <div className="flex gap-3 mb-4">
+              <div className="flex gap-3 mb-6">
                 <button
                   onClick={handleCopy}
-                  className="flex-1 py-3.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium flex items-center justify-center gap-2 transition-all duration-300"
+                  className="flex-1 py-3.5 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2 transition-all duration-300 rounded-lg hover:shadow-md transform hover:-translate-y-0.5"
                 >
                   {copied ? (
                     <>
@@ -473,42 +482,8 @@ export default function CreatePage() {
                 </button>
                 <button
                   onClick={async () => {
-                    try {
-                      const creationData = {
-                        id: `creation_${Date.now()}`,
-                        userId: userId!,
-                        title: idea,
-                        content: generatedContent,
-                        keywords: { tags: keywords },
-                        topic: selectedTopic || { category: '生活方式' },
-                        createdAt: Date.now(),
-                      };
-
-                      // 保存到localStorage
-                      const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
-                      existingCreations.push(creationData);
-                      localStorage.setItem('userCreations', JSON.stringify(existingCreations));
-
-                      alert("内容已保存到草稿！");
-                      router.push("/dashboard");
-                    } catch (error) {
-                      console.error('Error saving to draft:', error);
-                      alert('保存草稿失败，请重试');
-                    }
-                  }}
-                  className="flex-1 py-3.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2 transition-all duration-300"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                  保存到草稿
-                </button>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={async () => {
-                    // 接受该生成内容并保存到历史
+                    if (saved) return;
+                    // 保存内容到历史
                     try {
                       const creationData = {
                         id: `creation_${Date.now()}`,
@@ -536,43 +511,39 @@ export default function CreatePage() {
                         }),
                       });
 
-                      if (response.ok) {
-                        alert("内容已接受并保存！");
-                        router.push("/history");
-                      } else {
-                        // API保存失败，但localStorage保存成功，仍然提示成功
-                        alert("内容已保存到本地！");
-                        router.push("/history");
-                      }
+                      setSaved(true);
+                      // 弹出轻提示
+                      alert('已保存到你的创作时间轴啦');
                     } catch (error) {
                       console.error('Error saving creation:', error);
                       // 即使出错，localStorage可能已经保存成功
                       alert("内容生成成功，但保存遇到问题，请重试");
                     }
                   }}
-                  className="flex-1 py-3.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center gap-2 transition-all duration-300"
+                  className={`flex-1 py-3.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 ${saved ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gradient-to-r from-red-500 to-pink-500 text-white hover:shadow-lg'}`}
                 >
-                  <Check className="w-4 h-4" /> 接受该生成内容
+                  <Check className="w-4 h-4" /> {saved ? '已保存' : '保存到历史'}
                 </button>
                 <button
                   onClick={() => {
-                    // 还需继续修改 - 重置状态
+                    // 重新编辑：跳转到内容生成输入页，保留当前想法
                     setHasResult(false);
                     setGeneratedContent('');
                     setKeywords([]);
                     setSelectedTopic(null);
+                    setSaved(false);
                   }}
-                  className="flex-1 py-3.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2 transition-all duration-300"
+                  className="flex-1 py-3.5 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium flex items-center justify-center gap-2 transition-all duration-300 rounded-lg hover:shadow-md transform hover:-translate-y-0.5"
                 >
-                  <RefreshCw className="w-4 h-4" /> 还需继续修改
+                  <RefreshCw className="w-4 h-4" /> 重新编辑
                 </button>
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-6">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 bg-gradient-accent rounded-full flex items-center justify-center shadow-soft-md">
-                  <MessageSquarePlus className="w-4 h-4 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+                  <MessageSquarePlus className="w-5 h-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-base text-gray-800">反馈与优化</h3>
               </div>
@@ -591,11 +562,9 @@ export default function CreatePage() {
                               : [...prev, tag]
                           );
                         }}
-                        className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 border shadow-soft-sm ${
-                          selectedOptimizations.includes(tag)
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
-                        }`}
+                        className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 border shadow-sm ${selectedOptimizations.includes(tag)
+                            ? 'bg-blue-500 text-white border-blue-500 shadow-md transform scale-105'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:shadow-md'}`}
                       >
                         {tag}
                       </button>
@@ -609,7 +578,7 @@ export default function CreatePage() {
                     <input
                       type="text"
                       placeholder="输入您的优化建议..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       value={customFeedback}
                       onChange={(e) => setCustomFeedback(e.target.value)}
                     />
@@ -624,13 +593,17 @@ export default function CreatePage() {
                       if (customFeedback.trim()) {
                         optimizations.push(customFeedback.trim());
                       }
-                      if (optimizations.length > 0) {
-                        await handleRegenerate(optimizations);
-                        setSelectedOptimizations([]);
-                        setCustomFeedback('');
+                      if (optimizations.length === 0) {
+                        alert('请选择微调方向或输入优化建议');
+                        return;
                       }
+                      await handleRegenerate(optimizations);
+                      setSelectedOptimizations([]);
+                      setCustomFeedback('');
+                      // 弹出轻提示
+                      alert('优化完成，看看是不是更合心意啦～');
                     }}
-                    className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-all duration-300"
+                    className="flex-1 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:shadow-lg font-medium text-sm transition-all duration-300 transform hover:-translate-y-0.5"
                   >
                     应用优化 ({selectedOptimizations.length + (customFeedback.trim() ? 1 : 0)})
                   </button>
@@ -639,7 +612,7 @@ export default function CreatePage() {
                       setSelectedOptimizations([]);
                       setCustomFeedback('');
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm transition-all duration-300"
+                    className="px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm transition-all duration-300 rounded-lg hover:shadow-md"
                   >
                     清空
                   </button>
@@ -647,10 +620,19 @@ export default function CreatePage() {
 
                 <button
                   onClick={() => {
+                    // 重新创建：清空所有内容，跳转到空白输入页
                     setHasResult(false);
                     setIdea('');
+                    setGeneratedContent('');
+                    setKeywords([]);
+                    setSelectedTopic(null);
+                    setSelectedOptimizations([]);
+                    setCustomFeedback('');
+                    setSaved(false);
+                    // 提示语
+                    alert('写下你的新想法吧～');
                   }}
-                  className="w-full py-3.5 bg-red-500 text-white rounded-xl hover:shadow-soft-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 shadow-soft-md"
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 shadow-md"
                 >
                   <Sparkles className="w-4 h-4" />
                   重新创建

@@ -40,25 +40,27 @@ export default function BottomNav() {
         <div className="flex items-center justify-around h-16">
           {navItems.map((item, index) => {
             const Icon = item.icon;
-            const isActive = currentPath === item.path;
+            // 首页路径需要特殊处理，因为它会重定向到dashboard
+            const isActive = (item.path === '/' && (currentPath === '/' || currentPath === '/dashboard')) || 
+                           (item.path !== '/' && currentPath === item.path);
 
             return (
               <button
                 key={index}
                 onClick={() => handleNavClick(item.path)}
                 className={`flex flex-col items-center justify-center px-3 py-2 rounded-xl transition-all duration-200 ${
-                  isActive ? 'bg-primary/10 -translate-y-0.5' : 'hover:bg-gray-100'
+                  isActive ? 'bg-rose-50 -translate-y-0.5' : 'hover:bg-gray-100'
                 }`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center mb-1 transition-all duration-200 ${
-                  isActive ? 'bg-gradient-primary shadow-soft-md' : ''
+                  isActive ? 'bg-rose-500 shadow-soft-md' : ''
                 }`}>
                   <Icon className={`w-5 h-5 transition-colors duration-200 ${
-                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                    isActive ? 'text-white' : 'text-gray-500 hover:text-gray-700'
                   }`} />
                 </div>
                 <span className={`text-xs font-medium transition-colors duration-200 ${
-                  isActive ? 'text-primary' : 'text-gray-500'
+                  isActive ? 'text-rose-500' : 'text-gray-500'
                 }`}>
                   {item.label}
                 </span>
