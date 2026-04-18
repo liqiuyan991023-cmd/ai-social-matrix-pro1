@@ -73,6 +73,12 @@ export default function OnboardingPage() {
       const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       setUserId(newUserId);
       setProfileCreated(false);
+      // 保存userId到localStorage
+      localStorage.setItem('userId', newUserId);
+      // 自动跳转到dashboard页面
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1000);
     };
 
     initializeOnboarding();
