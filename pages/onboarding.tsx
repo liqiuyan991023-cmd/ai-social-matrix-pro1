@@ -11,6 +11,7 @@ export default function OnboardingPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [profileCreated, setProfileCreated] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const [formData, setFormData] = useState({
     ageRange: '',
     profession: '',
@@ -23,68 +24,54 @@ export default function OnboardingPage() {
     creativePurpose: ''
   });
 
-  // 组件加载时检查是否已存在用户画像
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return;
+    if (!isMounted || initialized) return;
 
-    const initializeOnboarding = () => {
-      const storedUserId = localStorage.getItem('userId');
+    const storedUserId = localStorage.getItem('userId');
 
-      if (storedUserId) {
-        const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
-        const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
+    if (storedUserId) {
+      const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
+      const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
 
-        if (storedPersona) {
-          try {
-            const personaData = JSON.parse(storedPersona);
-            // 检查数据是否有效（包含必要的字段）
-            if (personaData.personality || personaData.personaSummary) {
-              // 数据有效，显示成功界面
-              setUserId(storedUserId);
-              setProfileCreated(true);
-              return;
-            }
-          } catch (e) {
-            // JSON 解析失败，清除无效数据
-            console.error('Failed to parse stored persona:', e);
-            localStorage.removeItem(`creativePersona_${storedUserId}`);
+      if (storedPersona) {
+        try {
+          const personaData = JSON.parse(storedPersona);
+          if (personaData.personality || personaData.personaSummary) {
+            setUserId(storedUserId);
+            setProfileCreated(true);
+            setInitialized(true);
+            return;
           }
-        }
-
-        if (storedProfile) {
-          try {
-            const profileData = JSON.parse(storedProfile);
-            // 如果有 profile 但没有有效的 persona，清除 profile
-            if (!localStorage.getItem(`creativePersona_${storedUserId}`)) {
-              localStorage.removeItem(`userProfile_${storedUserId}`);
-            }
-          } catch (e) {
-            console.error('Failed to parse stored profile:', e);
-            localStorage.removeItem(`userProfile_${storedUserId}`);
-          }
+        } catch (e) {
+          console.error('Failed to parse stored persona:', e);
+          localStorage.removeItem(`creativePersona_${storedUserId}`);
         }
       }
 
-      // 生成新的用户ID
-      const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-      setUserId(newUserId);
-      setProfileCreated(false);
-      // 保存userId到localStorage
-      localStorage.setItem('userId', newUserId);
-      // 自动跳转到dashboard页面
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1000);
-    };
+      if (storedProfile) {
+        try {
+          JSON.parse(storedProfile);
+          if (!localStorage.getItem(`creativePersona_${storedUserId}`)) {
+            localStorage.removeItem(`userProfile_${storedUserId}`);
+          }
+        } catch (e) {
+          console.error('Failed to parse stored profile:', e);
+          localStorage.removeItem(`userProfile_${storedUserId}`);
+        }
+      }
+    }
 
-    initializeOnboarding();
-  }, [isMounted]);
-  
-  // 使用新的generate-persona API生成创作人格
+    const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    setUserId(newUserId);
+    setProfileCreated(false);
+    localStorage.setItem('userId', newUserId);
+    setInitialized(true);
+  }, [isMounted, initialized]);
+
   const generatePersona = async (userInput: string): Promise<any> => {
     try {
       const response = await fetch('/api/generate-persona', {
@@ -110,8 +97,7 @@ export default function OnboardingPage() {
       return data.data;
     } catch (error: any) {
       console.error('Error generating persona:', error);
-      
-      // 生成默认数据作为备用
+
       const userLines = userInput.split('\n');
       const userData: any = {};
       userLines.forEach(line => {
@@ -154,7 +140,6 @@ export default function OnboardingPage() {
   const createProfile = async (data: any) => {
     setIsLoading(true);
     try {
-      // 处理数据格式
       let contentPreferences = [...data.contentPreference];
       if (data.customContentPreference) {
         contentPreferences.push(data.customContentPreference);
@@ -173,10 +158,8 @@ export default function OnboardingPage() {
 内容长度：${data.preferredLength}
 创作目的：${data.creativePurpose || '分享生活经验'}`;
 
-      // 调用新的generate-persona API生成创作人格
       const personaData = await generatePersona(userInput);
 
-      // 处理API返回的数据格式
       const processedData = {
         userId,
         ageRange: personaData.ageRange || data.ageRange,
@@ -212,11 +195,9 @@ export default function OnboardingPage() {
       }
 
       const result = await response.json();
-      // 存储 userId 到 localStorage
       localStorage.setItem('userId', userId);
-      // 存储用户画像到localStorage
       localStorage.setItem(`userProfile_${userId}`, JSON.stringify(result.profile));
-      // 保存AI生成的创作人格到localStorage
+
       const savedPersonaData = {
         userId: userId,
         personaSummary: personaData.personaSummary,
@@ -233,19 +214,12 @@ export default function OnboardingPage() {
       };
       localStorage.setItem(`creativePersona_${userId}`, JSON.stringify(savedPersonaData));
 
-      // 设置成功状态并停止加载
       setProfileCreated(true);
       setIsLoading(false);
-
-      // 自动跳转到创作页面
-      setTimeout(() => {
-        router.push('/create');
-      }, 1000);
 
       return result;
     } catch (error: any) {
       console.error("Error creating profile:", error);
-      // 提供更友好的错误提示
       let errorMessage = '创建画像失败，请稍后重试';
       if (error.message.includes('超时')) {
         errorMessage = '请求超时，请检查网络连接后重试';
@@ -265,14 +239,12 @@ export default function OnboardingPage() {
 
     if (formData.ageRange && formData.profession && formData.interests && hasContentPreference && hasContentStyle && formData.preferredLength && formData.creativePurpose) {
       await createProfile(formData);
-      // 创建成功后不直接跳转，让页面显示成功信息
     } else {
       alert('请填写所有必填项');
     }
   };
-  
+
   const handleRecreate = () => {
-    // 重置表单
     setFormData({
       ageRange: '',
       profession: '',
@@ -284,7 +256,6 @@ export default function OnboardingPage() {
       preferredLength: '',
       creativePurpose: ''
     });
-    // 清除localStorage中的创作人格数据
     localStorage.removeItem(`creativePersona_${userId}`);
     setProfileCreated(false);
   };
@@ -294,7 +265,6 @@ export default function OnboardingPage() {
     setShowConfirmDialog(false);
   };
 
-  // 检查是否创作人格已生成
   const isCreativePersonaGenerated = () => {
     if (!userId) return false;
     try {
@@ -304,7 +274,7 @@ export default function OnboardingPage() {
       return false;
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <TopBar title="表达风格设置" showIcon={false} />
@@ -337,7 +307,7 @@ export default function OnboardingPage() {
                       <option value="45+">45岁以上</option>
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">2. 职业或主要身份 *</label>
                     <input
@@ -359,7 +329,7 @@ export default function OnboardingPage() {
                       onChange={(e) => setFormData({ ...formData, interests: e.target.value })}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-3">4. 创作内容偏好 * (可多选)</label>
                     <div className="grid grid-cols-2 gap-3 mb-3">
@@ -448,7 +418,7 @@ export default function OnboardingPage() {
                       onChange={(e) => setFormData({ ...formData, customContentPreference: e.target.value })}
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-3">5. 表达风格 * (可多选)</label>
                     <div className="grid grid-cols-2 gap-3 mb-3">
@@ -564,7 +534,7 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </div>
-              
+
               <button
                 type="submit"
                 disabled={isLoading}
@@ -574,7 +544,7 @@ export default function OnboardingPage() {
               </button>
             </form>
           </div>
-        ) : profileCreated ? (
+        ) : (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6">
               <div className="flex items-center gap-2">
@@ -620,55 +590,8 @@ export default function OnboardingPage() {
               </button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mb-6 animate-fade-in">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-success rounded-full flex items-center justify-center shadow-soft-sm">
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                </div>
-                <h3 className="font-semibold text-green-800">你的表达习惯已梳理完成！</h3>
-              </div>
-              <div className="text-sm text-green-700 mt-3 space-y-2">
-                {(() => {
-                  try {
-                    const savedPersona = localStorage.getItem(`creativePersona_${userId}`);
-                    if (savedPersona) {
-                      const personaData = JSON.parse(savedPersona);
-                      const summary = personaData.personaSummary || personaData.personality || '';
-                      if (summary) {
-                        return <p className="leading-relaxed">{summary}</p>;
-                      }
-                    }
-                    return <p className="text-gray-500 italic">正在加载你的表达习惯...</p>;
-                  } catch (error) {
-                    console.error('Error loading creative persona:', error);
-                    return <p className="text-gray-500 italic">加载失败，请刷新页面重试</p>;
-                  }
-                })()}
-                <p className="mt-2 text-green-800">👉 这些只是你的"现在"，你想怎么变都可以，AI 会跟着你一起变～</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="w-full bg-rose-500 text-white py-3.5 rounded-xl hover:bg-rose-600 font-medium transition-all duration-300"
-              >
-                开始创作
-              </button>
-
-              <button
-                onClick={handleResetPersona}
-                className="w-full border-2 border-rose-500 text-rose-500 py-3.5 rounded-xl hover:bg-rose-50 font-medium transition-all duration-300"
-              >
-                随时更新我的偏好
-              </button>
-            </div>
-          </div>
         )}
-        
-        {/* 确认对话框 */}
+
         {showConfirmDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
