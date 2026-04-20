@@ -319,7 +319,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    await generateContentStream(res, contentService, userProfile, topic, regenerate, idea, effectivePersonaSummary);
+    await generateContentStream(res, contentService, userProfile, topic, regenerate, idea, effectivePersonaSummary, userInput);
     
   } catch (error) {
     console.error("Error in content generation:", error);
@@ -334,7 +334,8 @@ async function generateContentStream(
   topic: any,
   regenerate?: string,
   idea?: string,
-  personaSummary?: string
+  personaSummary?: string,
+  userInput?: string
 ) {
   res.write(`data: ${JSON.stringify({ stage: "title", content: "" })}\n\n`);
   
@@ -349,11 +350,21 @@ async function generateContentStream(
   let content = '';
   try {
     console.log('[GENERATE-CONTENT-API] Calling contentService.generateContent');
+    console.log('[GENERATE-CONTENT-API] Parameters:', {
+      userInput,
+      idea,
+      selectedTitle,
+      topicTitle: topic.title,
+      topicAngle: topic.contentAngle
+    });
     
     // 使用我们实现的generateContent方法，它会集成RAG检索结果
     content = await contentService.generateContent(userProfile, topic, selectedTitle, regenerate, idea);
     
-    console.log('[GENERATE-CONTENT-API] contentService.generateContent response:', { contentLength: content?.length });
+    console.log('[GENERATE-CONTENT-API] contentService.generateContent response:', { 
+      contentLength: content?.length,
+      contentPreview: content?.substring(0, 100) + '...' 
+    });
 
     if (!content || typeof content !== 'string') {
       console.error('[GENERATE-CONTENT-API] Invalid content received from contentService');

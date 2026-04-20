@@ -54,70 +54,65 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
   }
 
   async generateContent(userProfile: UserProfile, topic: any, title: string, regenerate?: string, idea?: string): Promise<string> {
-    // 初始化风格RAG服务
     const styleRagService = new StyleRagService();
     
-    // 检索用户风格示例
     const query = `${title} ${topic.contentAngle} ${idea || ""}`;
     const styleContext = await styleRagService.getStyleContext(userProfile.userId, query);
     
-    let prompt = `# 风格模仿内容生成\n\n`;
+    let prompt = '';
     
-    // 用户信息部分
-    prompt += `## 用户信息\n`;
-    prompt += `- 年龄：${userProfile.ageRange}\n`;
-    prompt += `- 职业：${userProfile.profession}\n`;
-    prompt += `- 兴趣：${userProfile.interests.join(", ")}\n`;
-    prompt += `- 表达风格：${userProfile.contentStyle}\n`;
-    prompt += `- 内容长度：${userProfile.preferredLength}\n\n`;
-    
-    // 表达风格画像
-    if (userProfile.creativePersona) {
-      prompt += `## 表达风格画像\n`;
-      prompt += `- 风格总结：${userProfile.creativePersona.personaSummary}\n`;
-      prompt += `- 个性特征：${userProfile.creativePersona.personality}\n`;
-      prompt += `- 表达基调：${userProfile.creativePersona.tone}\n`;
-      prompt += `- 语言特点：\n`;
-      prompt += `  - 句式结构：${userProfile.creativePersona.languageFeatures.sentenceStructure}\n`;
-      prompt += `  - 词汇偏好：${userProfile.creativePersona.languageFeatures.vocabulary}\n`;
-      prompt += `  - 修辞手法：${userProfile.creativePersona.languageFeatures.rhetoric}\n`;
-      prompt += `  - 表情符号：${userProfile.creativePersona.languageFeatures.emojiUsage}\n`;
-      prompt += `  - 段落结构：${userProfile.creativePersona.languageFeatures.paragraphStructure}\n`;
-      prompt += `- 最近趋势：${userProfile.creativePersona.recentTrends}\n\n`;
+    // 核心创作任务 - 放在最前面，突出用户的具体需求
+    if (idea) {
+      prompt += `# 内容创作任务\n\n`;
+      prompt += `## 用户创作需求（这是最重要的）\n`;
+      prompt += `${idea}\n\n`;
+      prompt += `请根据以上用户需求，生成一篇完整的原创内容。\n\n`;
     }
     
-    // 风格参考示例
+    // 风格指导
+    prompt += `## 风格指导\n`;
+    if (userProfile.creativePersona) {
+      prompt += `- 整体风格：${userProfile.creativePersona.personaSummary}\n`;
+      prompt += `- 语气基调：${userProfile.creativePersona.tone}\n`;
+      prompt += `- 语言特点：${userProfile.creativePersona.languageFeatures?.rhetoric || '自然口语化'}\n`;
+      prompt += `- 常用表达：${userProfile.creativePersona.languageFeatures?.vocabulary || '亲切随性'}\n`;
+    } else {
+      prompt += `- 整体风格：亲切自然，像和朋友聊天\n`;
+      prompt += `- 语气基调：${userProfile.contentStyle || '轻松随性'}\n`;
+      prompt += `- 长度偏好：${userProfile.preferredLength === 'short' ? '简短精炼' : userProfile.preferredLength === 'medium' ? '中等长度' : '详细丰富'}\n`;
+    }
+    prompt += `\n`;
+    
+    // 参考示例
     if (styleContext.examples.length > 0) {
-      prompt += `## 风格参考示例\n`;
+      prompt += `## 参考示例\n`;
       styleContext.examples.forEach((example, index) => {
-        prompt += `### 示例 ${index + 1}\n`;
-        prompt += `**标题**：${example.title}\n`;
-        prompt += `**内容**：${example.content.substring(0, 200)}...\n\n`;
+        prompt += `【示例${index + 1}】${example.content.substring(0, 150)}...\n\n`;
       });
     }
     
     // 最近创作
     if (styleContext.recentCreations.length > 0) {
-      prompt += `## 最近创作参考\n`;
+      prompt += `## 最近创作风格参考\n`;
       styleContext.recentCreations.slice(0, 2).forEach((creation, index) => {
-        prompt += `### 最近创作 ${index + 1}\n`;
-        prompt += `**标题**：${creation.title}\n`;
-        prompt += `**内容**：${creation.content.substring(0, 150)}...\n\n`;
+        prompt += `【最近${index + 1}】${creation.content.substring(0, 100)}...\n\n`;
       });
     }
     
-    // 创作主题
-    prompt += `## 创作主题\n`;
-    prompt += `- 标题：${title}\n`;
-    prompt += `- 原始主题：${topic.title}\n`;
+    // 主题背景
+    prompt += `## 主题背景\n`;
+    prompt += `- 主题：${topic.title}\n`;
     prompt += `- 角度：${topic.contentAngle}\n`;
     prompt += `- 分类：${topic.category}\n\n`;
     
-    // 用户创作想法
+    // 修正指令
     if (idea) {
-      prompt += `## 【重要】用户创作想法\n`;
-      prompt += `${idea}\n\n`;
-      prompt += `请严格基于用户的这个具体想法来创作内容，不能偏离这个主题！\n\n`;
+      prompt += `## 重要指令\n`;
+      prompt += `1. 严格围绕"${idea}"这个具体需求来创作\n`;
+      prompt += `2. 内容必须与用户需求高度相关，不能偏离主题\n`;
+      prompt += `3. 风格要贴近用户的表达习惯\n`;
+      prompt += `4. 语言口语化，有个人特色和真实情感\n`;
+      prompt += `5. 结构清晰：开头吸引人，中间内容充实，结尾有互动性\n\n`;
     }
     
     // 用户反馈
@@ -126,18 +121,9 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
       prompt += `${regenerate}\n\n`;
     }
     
-    // 生成要求
-    prompt += `## 生成要求\n`;
-    prompt += `1. **风格模仿**：严格参考用户的表达风格画像和风格示例，模仿用户的语言习惯、句式结构、修辞手法等\n`;
-    prompt += `2. **内容相关**：${idea ? "严格基于用户的创作想法来生成内容，不能生成无关的内容" : "自然真实，与主题高度相关"}\n`;
-    prompt += `3. **语言特点**：口语化，亲切自然，像是用户自己写的\n`;
-    prompt += `4. **结构清晰**：有开头、中间、结尾，段落分明，易于阅读\n`;
-    prompt += `5. **细节丰富**：内容具体，有细节和个人感受\n`;
-    prompt += `6. **风格一致性**：使用与用户风格匹配的emoji和表达方式\n`;
-    prompt += `7. **长度合适**：符合用户的内容长度偏好\n`;
-    prompt += `8. **真实性**：体现真实的个人表达，而非虚拟人设\n`;
-    prompt += `9. **不刻意优化**：不刻意追求平台优化或爆款效果\n`;
-    prompt += `10. **参考示例**：充分参考提供的风格示例，确保风格一致性\n`;
+    // 输出要求
+    prompt += `## 输出要求\n`;
+    prompt += `直接输出完整的原创内容，不需要解释说明。`;
 
     return await callLongCatAPI(prompt);
   }
