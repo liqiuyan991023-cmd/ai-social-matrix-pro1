@@ -123,7 +123,8 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
     
     // 输出要求
     prompt += `## 输出要求\n`;
-    prompt += `直接输出完整的原创内容，不需要解释说明。`;
+    prompt += `重要：只输出最终内容，不要输出思考过程，不要输出解释说明，不要输出分析步骤。\n`;
+    prompt += `只输出完整的原创内容文本。`;
 
     return await callLongCatAPI(prompt);
   }
