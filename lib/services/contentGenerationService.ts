@@ -2,6 +2,7 @@ import { UserProfile, CreationRecord, Feedback } from "../types";
 import { callLongCatAPI } from "../api/longcat";
 import { redis } from "../db/redis";
 import { UserProfileService } from "./userProfileService";
+import { StyleRagService } from "./styleRagService";
 
 export class ContentGenerationService {
   private readonly CREATION_KEY = (creationId: string) => `creation:${creationId}`;
@@ -53,38 +54,90 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
   }
 
   async generateContent(userProfile: UserProfile, topic: any, title: string, regenerate?: string, idea?: string): Promise<string> {
-    const prompt = `基于以下信息生成自然真实的内容，体现用户的个人表达风格：
-
-用户信息：
-- 年龄：${userProfile.ageRange}
-- 职业：${userProfile.profession}
-- 兴趣：${userProfile.interests.join(", ")}
-- 表达风格：${userProfile.contentStyle}
-- 内容长度：${userProfile.preferredLength}
-
-${idea ? `【重要】用户创作想法（必须严格遵循）：${idea}
-
-请基于用户的这个具体想法来创作内容，不能偏离这个主题！` : ""}
-
-创作主题：
-- 标题：${title}
-- 原始主题：${topic.title}
-- 角度：${topic.contentAngle}
-- 分类：${topic.category}
-
-${regenerate ? `用户反馈：${regenerate}` : ""}
-
-要求：
-1. ${idea ? "严格基于用户的创作想法来生成内容，不能生成无关的内容" : "自然真实，体现个人风格"}
-2. 语言口语化，亲切自然，像是用户自己写的
-3. 结构清晰，有开头、中间、结尾
-4. 内容具体，有细节和个人感受
-5. 包含适当的emoji（如果符合用户风格）
-6. 段落分明，易于阅读
-7. 符合用户的表达风格
-8. 长度符合用户偏好
-9. 不刻意追求平台优化或爆款效果
-10. 体现真实的个人表达，而非虚拟人设`;
+    // 初始化风格RAG服务
+    const styleRagService = new StyleRagService();
+    
+    // 检索用户风格示例
+    const query = `${title} ${topic.contentAngle} ${idea || ""}`;
+    const styleContext = await styleRagService.getStyleContext(userProfile.userId, query);
+    
+    let prompt = `# 风格模仿内容生成\n\n`;
+    
+    // 用户信息部分
+    prompt += `## 用户信息\n`;
+    prompt += `- 年龄：${userProfile.ageRange}\n`;
+    prompt += `- 职业：${userProfile.profession}\n`;
+    prompt += `- 兴趣：${userProfile.interests.join(", ")}\n`;
+    prompt += `- 表达风格：${userProfile.contentStyle}\n`;
+    prompt += `- 内容长度：${userProfile.preferredLength}\n\n`;
+    
+    // 表达风格画像
+    if (userProfile.creativePersona) {
+      prompt += `## 表达风格画像\n`;
+      prompt += `- 风格总结：${userProfile.creativePersona.personaSummary}\n`;
+      prompt += `- 个性特征：${userProfile.creativePersona.personality}\n`;
+      prompt += `- 表达基调：${userProfile.creativePersona.tone}\n`;
+      prompt += `- 语言特点：\n`;
+      prompt += `  - 句式结构：${userProfile.creativePersona.languageFeatures.sentenceStructure}\n`;
+      prompt += `  - 词汇偏好：${userProfile.creativePersona.languageFeatures.vocabulary}\n`;
+      prompt += `  - 修辞手法：${userProfile.creativePersona.languageFeatures.rhetoric}\n`;
+      prompt += `  - 表情符号：${userProfile.creativePersona.languageFeatures.emojiUsage}\n`;
+      prompt += `  - 段落结构：${userProfile.creativePersona.languageFeatures.paragraphStructure}\n`;
+      prompt += `- 最近趋势：${userProfile.creativePersona.recentTrends}\n\n`;
+    }
+    
+    // 风格参考示例
+    if (styleContext.examples.length > 0) {
+      prompt += `## 风格参考示例\n`;
+      styleContext.examples.forEach((example, index) => {
+        prompt += `### 示例 ${index + 1}\n`;
+        prompt += `**标题**：${example.title}\n`;
+        prompt += `**内容**：${example.content.substring(0, 200)}...\n\n`;
+      });
+    }
+    
+    // 最近创作
+    if (styleContext.recentCreations.length > 0) {
+      prompt += `## 最近创作参考\n`;
+      styleContext.recentCreations.slice(0, 2).forEach((creation, index) => {
+        prompt += `### 最近创作 ${index + 1}\n`;
+        prompt += `**标题**：${creation.title}\n`;
+        prompt += `**内容**：${creation.content.substring(0, 150)}...\n\n`;
+      });
+    }
+    
+    // 创作主题
+    prompt += `## 创作主题\n`;
+    prompt += `- 标题：${title}\n`;
+    prompt += `- 原始主题：${topic.title}\n`;
+    prompt += `- 角度：${topic.contentAngle}\n`;
+    prompt += `- 分类：${topic.category}\n\n`;
+    
+    // 用户创作想法
+    if (idea) {
+      prompt += `## 【重要】用户创作想法\n`;
+      prompt += `${idea}\n\n`;
+      prompt += `请严格基于用户的这个具体想法来创作内容，不能偏离这个主题！\n\n`;
+    }
+    
+    // 用户反馈
+    if (regenerate) {
+      prompt += `## 用户反馈\n`;
+      prompt += `${regenerate}\n\n`;
+    }
+    
+    // 生成要求
+    prompt += `## 生成要求\n`;
+    prompt += `1. **风格模仿**：严格参考用户的表达风格画像和风格示例，模仿用户的语言习惯、句式结构、修辞手法等\n`;
+    prompt += `2. **内容相关**：${idea ? "严格基于用户的创作想法来生成内容，不能生成无关的内容" : "自然真实，与主题高度相关"}\n`;
+    prompt += `3. **语言特点**：口语化，亲切自然，像是用户自己写的\n`;
+    prompt += `4. **结构清晰**：有开头、中间、结尾，段落分明，易于阅读\n`;
+    prompt += `5. **细节丰富**：内容具体，有细节和个人感受\n`;
+    prompt += `6. **风格一致性**：使用与用户风格匹配的emoji和表达方式\n`;
+    prompt += `7. **长度合适**：符合用户的内容长度偏好\n`;
+    prompt += `8. **真实性**：体现真实的个人表达，而非虚拟人设\n`;
+    prompt += `9. **不刻意优化**：不刻意追求平台优化或爆款效果\n`;
+    prompt += `10. **参考示例**：充分参考提供的风格示例，确保风格一致性\n`;
 
     return await callLongCatAPI(prompt);
   }
@@ -162,6 +215,15 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
       // Redis 不可用时，继续执行，不影响用户体验
     }
 
+    // 存储到向量数据库，用于RAG检索
+    try {
+      const styleRagService = new StyleRagService();
+      await styleRagService.storeCreationEmbedding(fullCreation);
+    } catch (error) {
+      console.error('Error storing creation embedding:', error);
+      // 失败不影响创作保存
+    }
+
     // 自动更新表达风格画像
     try {
       const userProfileService = new UserProfileService();
@@ -235,10 +297,18 @@ ${regenerate ? `用户反馈：${regenerate}` : ""}
 
       await redis.set(this.CREATION_KEY(creationId), JSON.stringify(updatedCreation));
 
-      // 自动更新表达风格画像
+      // 自动更新表达风格画像，强化反馈影响
       try {
         const userProfileService = new (require('./userProfileService').UserProfileService)();
+        
+        // 立即更新表达风格画像，确保反馈能够实时影响
         await userProfileService.updateProfileFromCreations(creation.userId);
+        
+        // 如果有风格调整建议，额外处理
+        if (feedback.improvements && feedback.improvements.styleAdjustments && feedback.improvements.styleAdjustments.length > 0) {
+          // 可以在这里添加更详细的反馈处理逻辑
+          console.log('Style adjustments received:', feedback.improvements.styleAdjustments);
+        }
       } catch (error) {
         console.error('Error updating profile from feedback:', error);
         // 失败不影响反馈添加

@@ -23,7 +23,16 @@ export interface UserProfile {
     tone: string;
     uniqueAngle: string;
     contentStrengths: string[];
-    generatedAt?: string;
+    languageFeatures: {
+      sentenceStructure: string;
+      vocabulary: string;
+      rhetoric: string;
+      emojiUsage: string;
+      paragraphStructure: string;
+    };
+    recentTrends: string;
+    feedbackIntegration: string;
+    generatedAt: string;
   };
   favoriteAccounts?: string[];
   createdAt: number;

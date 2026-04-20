@@ -72,46 +72,82 @@ export class UserProfileService {
     if (!profile) return;
 
     const contentGenerationService = new (require('./contentGenerationService').ContentGenerationService)();
-    const creations: CreationRecord[] = await contentGenerationService.getUserCreations(userId, 10);
+    const creations: CreationRecord[] = await contentGenerationService.getUserCreations(userId, 15);
     
-    let prompt = `基于以下用户信息和历史创作记录，梳理用户的表达风格画像：
-    年龄: ${profile.ageRange}
-    职业: ${profile.profession}
-    兴趣: ${profile.interests.join(", ")}
-    专长: ${profile.expertise.join(", ")}
-    创作目标: ${profile.contentGoals.join(", ")}
-    表达风格: ${profile.contentStyle}
-    `;
+    let prompt = `# 风格蒸馏：用户表达风格画像生成\n\n`;
+    prompt += `## 用户基本信息\n`;
+    prompt += `- 年龄：${profile.ageRange}\n`;
+    prompt += `- 职业：${profile.profession}\n`;
+    prompt += `- 兴趣：${profile.interests.join(", ")}\n`;
+    prompt += `- 专长：${profile.expertise.join(", ")}\n`;
+    prompt += `- 创作目标：${profile.contentGoals.join(", ")}\n`;
+    prompt += `- 表达风格：${profile.contentStyle}\n`;
+    prompt += `- 内容长度偏好：${profile.preferredLength}\n\n`;
     
     if (creations.length > 0) {
-      prompt += `\n\n历史创作记录：\n`;
+      prompt += `## 历史创作分析\n`;
+      prompt += `### 创作概览\n`;
+      prompt += `- 总创作数量：${creations.length}\n`;
+      prompt += `- 时间范围：${new Date(creations[creations.length - 1].createdAt).toLocaleDateString('zh-CN')} 至 ${new Date(creations[0].createdAt).toLocaleDateString('zh-CN')}\n\n`;
+      
+      prompt += `### 详细创作记录\n`;
       creations.forEach((creation: CreationRecord, index: number) => {
-        prompt += `创作 ${index + 1}：\n`;
-        prompt += `标题：${creation.title}\n`;
-        prompt += `内容：${creation.content.substring(0, 300)}...\n`;
+        prompt += `#### 创作 ${index + 1}\n`;
+        prompt += `- 标题：${creation.title}\n`;
+        prompt += `- 内容：${creation.content.substring(0, 400)}...\n`;
         if (creation.feedback && creation.feedback.length > 0) {
-          prompt += `用户反馈：${creation.feedback.map(f => f.customFeedback || f.presetFeedback).join('; ')}\n`;
+          prompt += `- 用户反馈：\n`;
+          creation.feedback.forEach((feedback, feedbackIndex) => {
+            if (feedback.presetFeedback) {
+              prompt += `  - 预设反馈：${feedback.presetFeedback.join('; ')}\n`;
+            }
+            if (feedback.customFeedback) {
+              prompt += `  - 自定义反馈：${feedback.customFeedback}\n`;
+            }
+            if (feedback.improvements) {
+              prompt += `  - 改进建议：${feedback.improvements.styleAdjustments?.join('; ') || '无'}\n`;
+            }
+          });
         }
         prompt += `\n`;
       });
     }
     
-    prompt += `\n请输出JSON格式，包含以下字段：
-    {
-      "personaSummary": "表达风格总结",
-      "ageRange": "年龄范围",
-      "profession": "职业或身份",
-      "interests": ["兴趣1", "兴趣2"],
-      "contentStyle": "表达风格",
-      "contentGoals": ["创作目标1", "创作目标2"],
-      "preferredLength": "内容长度偏好",
-      "creativePurpose": "创作目的",
-      "targetAudience": "目标受众",
-      "personality": "风格记忆",
-      "tone": "表达基调",
-      "uniqueAngle": "独特视角",
-      "contentStrengths": ["优势1", "优势2"]
-    }`;
+    prompt += `## 风格蒸馏要求\n`;
+    prompt += `1. **深度分析**：基于用户的所有创作和反馈，提取核心表达特征\n`;
+    prompt += `2. **模式识别**：识别用户的语言习惯、句式结构、修辞手法等\n`;
+    prompt += `3. **反馈整合**：将用户的反馈转化为风格调整建议\n`;
+    prompt += `4. **动态适应**：考虑用户最近的创作趋势，反映最新的表达偏好\n`;
+    prompt += `5. **精准画像**：生成详细的表达风格画像，包含多个维度\n\n`;
+    
+    prompt += `## 输出格式\n`;
+    prompt += `请输出JSON格式，包含以下字段：\n`;
+    prompt += `{\n`;
+    prompt += `  "personaSummary": "表达风格总结（200字以内）",\n`;
+    prompt += `  "ageRange": "年龄范围",\n`;
+    prompt += `  "profession": "职业或身份",\n`;
+    prompt += `  "interests": ["兴趣1", "兴趣2"],\n`;
+    prompt += `  "contentStyle": "表达风格",\n`;
+    prompt += `  "contentGoals": ["创作目标1", "创作目标2"],\n`;
+    prompt += `  "preferredLength": "内容长度偏好",\n`;
+    prompt += `  "creativePurpose": "创作目的",\n`;
+    prompt += `  "targetAudience": "目标受众",\n`;
+    prompt += `  "personality": "风格记忆（详细描述用户的表达个性）",\n`;
+    prompt += `  "tone": "表达基调（如温暖、专业、活泼等）",\n`;
+    prompt += `  "uniqueAngle": "独特视角",\n`;
+    prompt += `  "contentStrengths": ["优势1", "优势2"],\n`;
+    prompt += `  "languageFeatures": {\n`;
+    prompt += `    "sentenceStructure": "句式特点",\n`;
+    prompt += `    "vocabulary": "词汇偏好",\n`;
+    prompt += `    "rhetoric": "修辞手法",\n`;
+    prompt += `    "emojiUsage": "表情符号使用习惯",\n`;
+    prompt += `    "paragraphStructure": "段落结构"
+`;
+    prompt += `  },\n`;
+    prompt += `  "recentTrends": "最近的表达趋势",\n`;
+    prompt += `  "feedbackIntegration": "基于反馈的风格调整",\n`;
+    prompt += `  "generatedAt": "${new Date().toISOString()}"\n`;
+    prompt += `}`;
 
     try {
       const personaJson = await callLongCatAPI(prompt);
@@ -120,7 +156,7 @@ export class UserProfileService {
       await this.updateProfile(userId, { creativePersona: persona });
     } catch (error) {
       console.error("Failed to generate creative persona:", error);
-      // 如果生成失败，使用默认表达风格画像
+      // 如果生成失败，使用增强版默认表达风格画像
       const defaultPersona = {
         personaSummary: "基于你的特点，AI正在为你梳理表达风格...",
         ageRange: profile.ageRange,
@@ -134,7 +170,17 @@ export class UserProfileService {
         personality: "亲切友好，注重生活品质，喜欢分享实用的生活技巧",
         tone: "温暖自然，口语化，像是和朋友聊天一样",
         uniqueAngle: "从个人经验出发，分享真实的生活感悟",
-        contentStrengths: ["实用性强", "内容具体", "情感共鸣"]
+        contentStrengths: ["实用性强", "内容具体", "情感共鸣"],
+        languageFeatures: {
+          sentenceStructure: "短句为主，结构清晰",
+          vocabulary: "通俗易懂，贴近生活",
+          rhetoric: "比喻、拟人等修辞手法",
+          emojiUsage: "适度使用表情符号",
+          paragraphStructure: "段落短小，层次分明"
+        },
+        recentTrends: "保持稳定的表达风格",
+        feedbackIntegration: "根据反馈持续优化",
+        generatedAt: new Date().toISOString()
       };
       await this.updateProfile(userId, { creativePersona: defaultPersona });
     }
