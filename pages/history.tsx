@@ -132,13 +132,13 @@ export default function HistoryPage() {
   };
 
   const handleFeedback = async (creation: Creation) => {
-    // 跳转到创作页面进行反馈
-    router.push(`/create?action=feedback&creationId=${creation.id}&content=${encodeURIComponent(creation.title || creation.content.substring(0, 100))}`);
+    // 跳转到创作页面进行反馈，传递完整的创作内容
+    router.push(`/create?action=feedback&creationId=${creation.id}&content=${encodeURIComponent(creation.content)}&title=${encodeURIComponent(creation.title)}`);
   };
 
   const handleOptimize = async (creation: Creation) => {
-    // 跳转到创作页面进行优化
-    router.push(`/create?action=optimize&creationId=${creation.id}&content=${encodeURIComponent(creation.title || creation.content.substring(0, 100))}`);
+    // 跳转到创作页面进行优化，传递完整的创作内容
+    router.push(`/create?action=optimize&creationId=${creation.id}&content=${encodeURIComponent(creation.content)}&title=${encodeURIComponent(creation.title)}`);
   };
 
   // 删除创作记录

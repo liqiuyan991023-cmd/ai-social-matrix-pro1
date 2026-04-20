@@ -253,43 +253,40 @@ async function generateContentStream(
   
   res.write(`data: ${JSON.stringify({ stage: "content", content: "" })}\n\n`);
   
-  // 构建更强的prompt，包含对idea的强制性约束 + 创作人格
-  const enhancedPrompt = buildEnhancedContentPrompt(userProfile, topic, selectedTitle, idea, regenerate, personaSummary);
-  
+  // 使用ContentGenerationService的generateContent方法，集成RAG检索结果
   let content = '';
-    try {
-      console.log('[GENERATE-CONTENT-API] Calling callLongCatAPI with prompt length:', enhancedPrompt.length);
+  try {
+    console.log('[GENERATE-CONTENT-API] Calling contentService.generateContent');
+    
+    // 使用我们实现的generateContent方法，它会集成RAG检索结果
+    content = await contentService.generateContent(userProfile, topic, selectedTitle, regenerate, idea);
+    
+    console.log('[GENERATE-CONTENT-API] contentService.generateContent response:', { contentLength: content?.length });
 
-      // 截断过长的prompt，避免超时
-      const truncatedPrompt = enhancedPrompt.length > 3000 ? enhancedPrompt.substring(0, 3000) : enhancedPrompt;
-
-      content = await callLongCatAPI(truncatedPrompt);
-      console.log('[GENERATE-CONTENT-API] callLongCatAPI response:', { contentLength: content?.length });
-
-      if (!content || typeof content !== 'string') {
-        console.error('[GENERATE-CONTENT-API] Invalid content received from LongCat API');
-        throw new Error('LongCat API returned invalid content');
-      }
-
-      // 允许短内容，避免因长度检查导致失败
-      if (content.trim().length === 0) {
-        console.warn('[GENERATE-CONTENT-API] Empty content after trim, using fallback');
-        throw new Error('Empty content after trim');
-      }
-
-      console.log('[GENERATE-CONTENT-API] Content validation passed, length:', content.length);
-    } catch (apiError) {
-      logApiCall('error', 'LongCat API call failed', {
-        error: apiError,
-        message: apiError instanceof Error ? apiError.message : 'Unknown API error'
-      });
-
-      // 超时或API错误时，返回模拟响应以确保功能可用
-      console.warn('[GENERATE-CONTENT-API] Using mock response due to API error');
-      content = generateMockContent(selectedTitle, idea || '内容生成');
-      // 继续执行，不抛出错误
-      console.log('[GENERATE-CONTENT-API] Mock content generated, length:', content.length);
+    if (!content || typeof content !== 'string') {
+      console.error('[GENERATE-CONTENT-API] Invalid content received from contentService');
+      throw new Error('contentService returned invalid content');
     }
+
+    // 允许短内容，避免因长度检查导致失败
+    if (content.trim().length === 0) {
+      console.warn('[GENERATE-CONTENT-API] Empty content after trim, using fallback');
+      throw new Error('Empty content after trim');
+    }
+
+    console.log('[GENERATE-CONTENT-API] Content validation passed, length:', content.length);
+  } catch (apiError) {
+    logApiCall('error', 'Content generation failed', {
+      error: apiError,
+      message: apiError instanceof Error ? apiError.message : 'Unknown generation error'
+    });
+
+    // 超时或API错误时，返回模拟响应以确保功能可用
+    console.warn('[GENERATE-CONTENT-API] Using mock response due to generation error');
+    content = generateMockContent(selectedTitle, idea || '内容生成');
+    // 继续执行，不抛出错误
+    console.log('[GENERATE-CONTENT-API] Mock content generated, length:', content.length);
+  }
   
   res.write(`data: ${JSON.stringify({ stage: "content", content })}\n\n`);
   

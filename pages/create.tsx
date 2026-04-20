@@ -14,6 +14,7 @@ export default function CreatePage() {
   const [hasResult, setHasResult] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
+  const [generatedTitle, setGeneratedTitle] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<any | null>(null);
   const [selectedOptimizations, setSelectedOptimizations] = useState<string[]>([]);
@@ -91,15 +92,31 @@ export default function CreatePage() {
     setUserId(storedUserId);
     loadUserProfile(storedUserId);
 
-    const { action, creationId, content } = router.query;
+    const { action, creationId, content, title } = router.query;
     if (action && content) {
       const decodedContent = decodeURIComponent(content as string);
-      setIdea(decodedContent);
-
+      
       if (action === 'optimize') {
-        setTimeout(() => {
-          handleGenerate();
-        }, 500);
+        // 重写功能：保留原来的内容，显示在生成结果界面
+        setGeneratedContent(decodedContent);
+        if (title) {
+          const decodedTitle = decodeURIComponent(title as string);
+          setGeneratedTitle(decodedTitle);
+        }
+        setHasResult(true);
+        // 不自动生成，让用户在界面上进行修改
+      } else if (action === 'feedback') {
+        // 反馈功能：保留原来的内容，显示在生成结果界面
+        setGeneratedContent(decodedContent);
+        if (title) {
+          const decodedTitle = decodeURIComponent(title as string);
+          setGeneratedTitle(decodedTitle);
+        }
+        setHasResult(true);
+        // 不自动生成，让用户在界面上进行反馈
+      } else {
+        // 其他操作：设置为创作想法
+        setIdea(decodedContent);
       }
     }
   }, [isMounted, loadUserProfile, router]);
@@ -171,20 +188,21 @@ export default function CreatePage() {
             if (data === '[DONE]') break;
 
             try {
-              const stageData = JSON.parse(data);
-              if (stageData.stage === 'title') {
-                generatedTitle = stageData.content || '';
-              } else if (stageData.stage === 'content') {
-                if (stageData.content) {
-                  fullContent = stageData.content;
-                  setGeneratedContent(fullContent);
+                const stageData = JSON.parse(data);
+                if (stageData.stage === 'title') {
+                  generatedTitle = stageData.content || '';
+                  setGeneratedTitle(generatedTitle);
+                } else if (stageData.stage === 'content') {
+                  if (stageData.content) {
+                    fullContent = stageData.content;
+                    setGeneratedContent(fullContent);
+                  }
+                } else if (stageData.stage === 'keywords') {
+                  setKeywords(stageData.content?.tags || []);
                 }
-              } else if (stageData.stage === 'keywords') {
-                setKeywords(stageData.content?.tags || []);
+              } catch (e) {
+                console.error('Failed to parse SSE data:', e);
               }
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e);
-            }
           }
         }
       }
@@ -281,20 +299,21 @@ export default function CreatePage() {
             if (data === '[DONE]') break;
 
             try {
-              const stageData = JSON.parse(data);
-              if (stageData.stage === 'title') {
-                generatedTitle = stageData.content || '';
-              } else if (stageData.stage === 'content') {
-                if (stageData.content) {
-                  fullContent = stageData.content;
-                  setGeneratedContent(fullContent);
+                const stageData = JSON.parse(data);
+                if (stageData.stage === 'title') {
+                  generatedTitle = stageData.content || '';
+                  setGeneratedTitle(generatedTitle);
+                } else if (stageData.stage === 'content') {
+                  if (stageData.content) {
+                    fullContent = stageData.content;
+                    setGeneratedContent(fullContent);
+                  }
+                } else if (stageData.stage === 'keywords') {
+                  setKeywords(stageData.content?.tags || []);
                 }
-              } else if (stageData.stage === 'keywords') {
-                setKeywords(stageData.content?.tags || []);
+              } catch (e) {
+                console.error('Failed to parse SSE data:', e);
               }
-            } catch (e) {
-              console.error('Failed to parse SSE data:', e);
-            }
           }
         }
       }
@@ -473,7 +492,7 @@ export default function CreatePage() {
                       const creationData = {
                         id: `creation_${Date.now()}`,
                         userId: currentUserId,
-                        title: idea,
+                        title: generatedTitle || idea,
                         content: generatedContent,
                         keywords: { tags: keywords },
                         topic: selectedTopic || { category: '生活方式' },
