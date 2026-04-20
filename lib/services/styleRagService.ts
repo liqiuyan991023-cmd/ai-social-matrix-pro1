@@ -37,6 +37,12 @@ ${text}`;
 
   async storeCreationEmbedding(creation: CreationRecord): Promise<void> {
     try {
+      // 检查向量数据库是否配置
+      if (!vectorIndex) {
+        console.warn('Vector database not configured, skipping embedding storage');
+        return;
+      }
+      
       // 生成嵌入
       const embedding = await this.generateEmbedding(`${creation.title}\n${creation.content}`);
       
@@ -59,6 +65,12 @@ ${text}`;
 
   async retrieveStyleExamples(userId: string, query: string, limit: number = 3): Promise<CreationRecord[]> {
     try {
+      // 检查向量数据库是否配置
+      if (!vectorIndex) {
+        console.warn('Vector database not configured, skipping style examples retrieval');
+        return [];
+      }
+      
       // 生成查询嵌入
       const queryEmbedding = await this.generateEmbedding(query);
       
@@ -109,6 +121,12 @@ ${text}`;
 
   async getRecentCreations(userId: string, limit: number = 5): Promise<CreationRecord[]> {
     try {
+      // 检查向量数据库是否配置
+      if (!vectorIndex) {
+        console.warn('Vector database not configured, skipping recent creations retrieval');
+        return [];
+      }
+      
       // 按时间戳检索最近的创作
       const results = await vectorIndex.query({
         vector: Array(768).fill(0), // 任意向量，主要通过过滤和排序
@@ -170,6 +188,12 @@ ${text}`;
 
   async deleteCreationEmbedding(creationId: string): Promise<void> {
     try {
+      // 检查向量数据库是否配置
+      if (!vectorIndex) {
+        console.warn('Vector database not configured, skipping embedding deletion');
+        return;
+      }
+      
       await vectorIndex.delete(creationId);
     } catch (error) {
       console.error('Error deleting creation embedding:', error);
