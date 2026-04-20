@@ -41,7 +41,7 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
 
     console.log('[callLongCatAPI] SUCCESS: Got response from LongCat API');
 
-    const responseText = response.data.choices?.[0]?.message?.content || '';
+    const responseText = response.data.choices?.[0]?.message?.content || response.data.choices?.[0]?.message?.reasoning_content || '';
     if (responseText) {
       return responseText;
     } else {

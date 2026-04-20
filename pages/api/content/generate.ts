@@ -40,9 +40,10 @@ function generateMockContent(title: string, userInput?: string): string {
 
 // 分析用户输入，提取关键信息
 function analyzeUserInput(input: string): any {
-  // 提取主体（如小猫咪、宠物等）
+  // 提取主体（如小猫咪、宠物、美食等）
   let subject = '生活日常';
   let name = '';
+  let food = '';
   
   // 检测宠物相关词汇
   if (input.includes('猫咪') || input.includes('猫')) {
@@ -60,12 +61,24 @@ function analyzeUserInput(input: string): any {
     }
   } else if (input.includes('宠物')) {
     subject = '我家的宠物';
+  } else if (input.includes('美食') || input.includes('做法') || input.includes('菜谱') || input.includes('烹饪')) {
+    // 检测美食相关词汇
+    subject = '美食做法';
+    // 提取具体美食
+    const foodMatch = input.match(/分享(?:一个|一道|一种)?(?:美食|菜品)?(?:做法)?，?([^。，,]+)/);
+    if (foodMatch) {
+      food = foodMatch[1].trim();
+    } else if (input.includes('蒸鸡蛋')) {
+      food = '蒸鸡蛋';
+    }
   }
   
   // 生成开场白
   let opening = '大家好～';
   if (name) {
     opening = `大家好！今天要给大家介绍我的小可爱 ${name}～`;
+  } else if (food) {
+    opening = `大家好！今天想和大家分享${food}的做法～`;
   }
   
   // 生成主体内容
@@ -76,6 +89,10 @@ function analyzeUserInput(input: string): any {
     body = `我家猫咪真的超有个性！有时候高冷得像个女王，有时候又粘人得像个小baby～\n\n最近发现它特别喜欢在窗台上晒太阳，缩成一团像个小毛球，简直萌化了！`;
   } else if (subject.includes('狗狗')) {
     body = `我家狗狗真的是个小天使！每天准时叫我起床，陪我散步，还会在我难过的时候舔我的手～\n\n最近它学会了新技能，会接飞盘了，超级聪明！`;
+  } else if (subject.includes('美食做法') && food === '蒸鸡蛋') {
+    body = `分享一个超级简单又好吃的${food}做法！\n\n食材：鸡蛋2个、温水适量、盐少许、生抽、香油\n\n步骤：\n1. 鸡蛋打散，加入少许盐调味\n2. 加入1.5倍的温水，搅拌均匀\n3. 用滤网过滤掉气泡\n4. 盖上保鲜膜，用牙签扎几个小孔\n5. 水开后大火蒸8-10分钟\n6. 取出后淋上生抽和香油\n\n这样做出来的蒸鸡蛋嫩滑如布丁，老人小孩都爱吃！`;
+  } else if (subject.includes('美食做法') && food) {
+    body = `今天要分享${food}的做法！\n\n这道菜其实很简单，主要食材就是${food}和一些常见的调料。\n\n做法步骤：\n1. 准备好食材，洗净切块\n2. 起锅烧油，放入葱姜爆香\n3. 加入主料翻炒\n4. 加入适量调料调味\n5. 小火炖煮至熟透\n6. 撒上葱花即可出锅\n\n这样做出来的${food}味道鲜美，营养丰富，大家可以试试！`;
   } else {
     body = `最近生活里有很多小确幸，想和大家分享一下～\n\n虽然都是些平凡的小事，但正是这些点点滴滴让生活变得更美好。`;
   }
@@ -84,6 +101,8 @@ function analyzeUserInput(input: string): any {
   let closing = '希望大家喜欢我的分享～';
   if (name) {
     closing = `${name}说：谢谢大家的喜欢～`;
+  } else if (food) {
+    closing = `大家一定要试试这个${food}的做法，真的超级好吃！`;
   }
   
   // 生成话题标签
@@ -92,11 +111,14 @@ function analyzeUserInput(input: string): any {
     hashtags = name ? `#猫咪日常 #我家萌宠 #${name}` : '#猫咪日常 #我家萌宠';
   } else if (subject.includes('狗狗')) {
     hashtags = name ? `#狗狗日常 #我家萌宠 #${name}` : '#狗狗日常 #我家萌宠';
+  } else if (subject.includes('美食做法')) {
+    hashtags = food ? `#美食分享 #${food} #家常菜谱` : '#美食分享 #家常菜谱';
   }
   
   return {
     subject,
     name,
+    food,
     opening,
     body,
     closing,
