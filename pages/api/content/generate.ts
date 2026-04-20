@@ -25,13 +25,83 @@ const logApiCall = (level: string, message: string, data?: any) => {
 // 模拟内容生成函数
 function generateMockContent(title: string, userInput?: string): string {
   const topic = userInput || title;
+  
+  // 分析用户输入，提取关键信息
+  const analysis = analyzeUserInput(topic);
+  
   const mockContents = [
-    `大家好呀！今天想和大家分享一下${topic}～\n\n作为一个内容创作者，我发现${topic}真的很有意思。通过分享这个主题，希望能帮助到更多对这个话题感兴趣的朋友。\n\n${topic}不仅有趣，而且很实用。我建议大家也尝试一下，相信会有不错的收获！\n\n#${topic.replace(/\s+/g, '')} #生活分享 #内容创作`,
-    `今天来聊聊${topic}这个话题～\n\n最近我深入研究了${topic}，发现其中有很多值得分享的内容。通过这次分享，希望能让更多人了解${topic}的魅力。\n\n${topic}是一个很棒的创作方向，我计划未来会继续在这个领域深耕。希望大家喜欢我的分享！\n\n#${topic.replace(/\s+/g, '')} #创作分享 #生活感悟`,
-    `分享一个我最近关注的${topic}～\n\n${topic}这个话题其实很有深度，值得我们去探讨和分享。通过我的角度来解读${topic}，希望能给大家一些启发。\n\n如果你也对${topic}感兴趣，欢迎在评论区交流讨论！\n\n#${topic.replace(/\s+/g, '')} #深度分享 #创作日常`
+    `大家好呀！今天想和大家分享一下${analysis.subject}～\n\n${analysis.opening}\n\n${analysis.body}\n\n${analysis.closing}\n\n${analysis.hashtags}`,
+    `${analysis.opening}\n\n最近和${analysis.subject}相处的时光真的很治愈。${analysis.body}\n\n分享出来希望能给大家带来一点快乐！\n\n${analysis.closing}\n\n${analysis.hashtags}`,
+    `今天来聊聊我的${analysis.subject}～\n\n${analysis.body}\n\n${analysis.closing}\n\n${analysis.hashtags}`
   ];
 
   return mockContents[Math.floor(Math.random() * mockContents.length)];
+}
+
+// 分析用户输入，提取关键信息
+function analyzeUserInput(input: string): any {
+  // 提取主体（如小猫咪、宠物等）
+  let subject = '生活日常';
+  let name = '';
+  
+  // 检测宠物相关词汇
+  if (input.includes('猫咪') || input.includes('猫')) {
+    subject = '我家的小猫咪';
+    // 提取名字
+    const nameMatch = input.match(/叫([^。，,]+)/);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    }
+  } else if (input.includes('狗狗') || input.includes('狗')) {
+    subject = '我家的狗狗';
+    const nameMatch = input.match(/叫([^。，,]+)/);
+    if (nameMatch) {
+      name = nameMatch[1].trim();
+    }
+  } else if (input.includes('宠物')) {
+    subject = '我家的宠物';
+  }
+  
+  // 生成开场白
+  let opening = '大家好～';
+  if (name) {
+    opening = `大家好！今天要给大家介绍我的小可爱 ${name}～`;
+  }
+  
+  // 生成主体内容
+  let body = '';
+  if (subject.includes('猫咪') && name) {
+    body = `说到${name}，它真的是我生活里的快乐源泉！每天回家一开门，它就会跑过来蹭我的腿，超级粘人～\n\n最近它特别喜欢玩逗猫棒，每次玩起来都像个小疯子，可爱到爆炸！\n\n最让我感动的是，每当我工作压力大的时候，它总会安静地趴在我腿上，仿佛在安慰我。`;
+  } else if (subject.includes('猫咪')) {
+    body = `我家猫咪真的超有个性！有时候高冷得像个女王，有时候又粘人得像个小baby～\n\n最近发现它特别喜欢在窗台上晒太阳，缩成一团像个小毛球，简直萌化了！`;
+  } else if (subject.includes('狗狗')) {
+    body = `我家狗狗真的是个小天使！每天准时叫我起床，陪我散步，还会在我难过的时候舔我的手～\n\n最近它学会了新技能，会接飞盘了，超级聪明！`;
+  } else {
+    body = `最近生活里有很多小确幸，想和大家分享一下～\n\n虽然都是些平凡的小事，但正是这些点点滴滴让生活变得更美好。`;
+  }
+  
+  // 生成结尾
+  let closing = '希望大家喜欢我的分享～';
+  if (name) {
+    closing = `${name}说：谢谢大家的喜欢～`;
+  }
+  
+  // 生成话题标签
+  let hashtags = '#生活分享 #日常';
+  if (subject.includes('猫咪')) {
+    hashtags = name ? `#猫咪日常 #我家萌宠 #${name}` : '#猫咪日常 #我家萌宠';
+  } else if (subject.includes('狗狗')) {
+    hashtags = name ? `#狗狗日常 #我家萌宠 #${name}` : '#狗狗日常 #我家萌宠';
+  }
+  
+  return {
+    subject,
+    name,
+    opening,
+    body,
+    closing,
+    hashtags
+  };
 }
 
 // 验证API密钥 - 仅验证LongCat API Key
