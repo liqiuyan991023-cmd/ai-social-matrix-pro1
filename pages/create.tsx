@@ -503,16 +503,6 @@ export default function CreatePage() {
                       existingCreations.push(creationData);
                       localStorage.setItem('userCreations', JSON.stringify(existingCreations));
 
-                      const response = await fetch('/api/content/generate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          userId: currentUserId,
-                          topicId: selectedTopic?.id || 'default_topic',
-                          regenerate: null
-                        }),
-                      });
-
                       setSaved(true);
                       alert('已保存到你的创作时间轴啦');
                     } catch (error) {

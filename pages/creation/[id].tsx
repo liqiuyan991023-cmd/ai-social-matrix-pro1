@@ -26,28 +26,26 @@ export default function CreationDetailPage({ id }: { id: string }) {
   const fetchCreation = async (creationId: string) => {
     try {
       setIsLoading(true);
-      // 模拟 API 调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // 模拟创作数据
-      const mockCreation = {
-        id: creationId,
-        title: '打工人的救命神器分享',
-        content: '这绝对是打工人必备的桌面好物！😭\n\n平时天天对着电脑，颈椎真的受不了！最近入手了这几个小物件，幸福感直接拉满⬆️\n1️⃣ 屏幕增高架：不仅拯救了我的脖子，底下还能收纳键盘，桌面瞬间清爽！\n2️⃣ 无线磁吸充电座：告别一团乱麻的线，放上去就充电，超省心～\n3️⃣ 护眼挂灯：晚上加班（虽然不想）光线超舒服，不反光！\n\n你们桌面上有什么离不开的宝藏好物吗？评论区抄作业啦！👇\n\n#打工人日常 #桌面改造 #好物分享 #提升幸福感',
-        topic: {
-          category: '生活方式'
-        },
-        keywords: {
-          tags: ['打工人', '桌面改造', '好物分享', '提升幸福感']
-        },
-        createdAt: Date.now() - 86400000, // 1天前
-        likes: 128,
-        views: 1200
-      };
+      // 从 localStorage 获取创作数据
+      const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+      const creation = existingCreations.find((c: any) => c.id === creationId);
       
-      setCreation(mockCreation);
+      if (creation) {
+        setCreation(creation);
+      } else {
+        // 如果 localStorage 中没有，尝试从 API 获取
+        const response = await fetch(`/api/creation/${creationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCreation(data.creation);
+        } else {
+          setCreation(null);
+        }
+      }
     } catch (error) {
       console.error('Error fetching creation:', error);
+      setCreation(null);
     } finally {
       setIsLoading(false);
     }
