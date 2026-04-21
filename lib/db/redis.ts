@@ -48,8 +48,23 @@ class MockRedis {
   }
 }
 
-// 强制使用真实Upstash Redis
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+// 检查环境变量是否配置
+const isRedisConfigured = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
+
+// 尝试创建真实Redis客户端，如果失败则使用MockRedis
+export let redis: any;
+
+try {
+  if (isRedisConfigured) {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+    console.log('✅ Using real Upstash Redis');
+  } else {
+    throw new Error('Redis not configured');
+  }
+} catch (error) {
+  console.warn('⚠️  Upstash Redis configuration error, falling back to MockRedis:', (error as Error).message);
+  redis = new MockRedis();
+}
