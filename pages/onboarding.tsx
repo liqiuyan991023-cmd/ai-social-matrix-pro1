@@ -31,17 +31,17 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (!isMounted || initialized) return;
 
+    // 首先检查是否已有用户ID
     const storedUserId = localStorage.getItem('userId');
-
     if (storedUserId) {
+      setUserId(storedUserId);
+      
+      // 检查是否已有创作人格
       const storedPersona = localStorage.getItem(`creativePersona_${storedUserId}`);
-      const storedProfile = localStorage.getItem(`userProfile_${storedUserId}`);
-
       if (storedPersona) {
         try {
           const personaData = JSON.parse(storedPersona);
           if (personaData.personality || personaData.personaSummary) {
-            setUserId(storedUserId);
             setProfileCreated(true);
             setInitialized(true);
             return;
@@ -51,20 +51,13 @@ export default function OnboardingPage() {
           localStorage.removeItem(`creativePersona_${storedUserId}`);
         }
       }
-
-      if (storedProfile) {
-        try {
-          JSON.parse(storedProfile);
-          if (!localStorage.getItem(`creativePersona_${storedUserId}`)) {
-            localStorage.removeItem(`userProfile_${storedUserId}`);
-          }
-        } catch (e) {
-          console.error('Failed to parse stored profile:', e);
-          localStorage.removeItem(`userProfile_${storedUserId}`);
-        }
-      }
+      
+      setProfileCreated(false);
+      setInitialized(true);
+      return;
     }
 
+    // 没有用户ID时生成一个新的
     const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     setUserId(newUserId);
     setProfileCreated(false);
