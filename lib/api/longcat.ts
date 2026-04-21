@@ -46,44 +46,60 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
     let content = message?.content || '';
     const reasoning = message?.reasoning_content || '';
 
-    // 检查 content 是否正常（非乱码）
-    const hasReadableContent = content && /[\u4e00-\u9fa5a-zA-Z]/.test(content);
+    // 计算 content 中的可读字符比例（排除乱码）
+    const readableChars = (content.match(/[\u4e00-\u9fa5a-zA-Z0-9，。、！？；""''（）【】]/g) || []).length;
+    const totalChars = content.length;
+    const readableRatio = totalChars > 0 ? readableChars / totalChars : 0;
 
-    if (hasReadableContent && content.trim().length > 20) {
-      // content 正常，直接使用
+    // 如果 content 的可读字符比例 > 70%，认为是正常内容
+    if (readableRatio > 0.7 && content.trim().length > 20) {
       return content;
     }
 
-    // content 不正常，尝试从 reasoning_content 中提取实际内容
+    // content 不正常或比例过低，尝试从 reasoning_content 中提取实际内容
     if (reasoning && reasoning.length > 50) {
       // reasoning_content 通常包含：思考过程 + 最终内容
       // 尝试找到实际内容部分（通常在 "现在写" 或 "完整内容" 之后）
-      const markers = ['现在写', '完整内容', '输出：', '内容：', '最终：'];
+      const markers = ['现在开始写', '完整内容如下', '内容：', '输出内容：', '最终内容：', '内容如下：'];
       let actualContent = '';
 
       for (const marker of markers) {
         const markerIndex = reasoning.lastIndexOf(marker);
         if (markerIndex !== -1 && markerIndex < reasoning.length - 20) {
           actualContent = reasoning.substring(markerIndex + marker.length).trim();
-          break;
+          if (actualContent.length > 30) break;
         }
       }
 
-      // 如果没找到标记，尝试取后半部分（通常实际内容在后面）
-      if (!actualContent) {
-        const halfIndex = Math.floor(reasoning.length / 2);
-        actualContent = reasoning.substring(halfIndex).trim();
+      // 如果没找到标记，尝试找到内容开始的位置（通常是 "主题：" 或 "标题：" 之后）
+      if (!actualContent || actualContent.length < 30) {
+        const contentStartMarkers = ['主题：', '标题：', '各位好', '大家好', '嘿', '今天'];
+        for (const marker of contentStartMarkers) {
+          const idx = reasoning.lastIndexOf(marker);
+          if (idx !== -1 && idx > reasoning.length - 500) {
+            actualContent = reasoning.substring(idx).trim();
+            break;
+          }
+        }
       }
 
       // 清理内容：移除思考过程的部分
-      actualContent = actualContent
-        .replace(/首先[\s\S]*?其次/g, '')
-        .replace(/需要[\s\S]*?输出/g, '')
-        .replace(/重要：[\s\S]*?不要/g, '')
-        .trim();
+      if (actualContent && actualContent.length > 30) {
+        actualContent = actualContent
+          .replace(/首先[\s\S]*?其次/g, '')
+          .replace(/需要[\s\S]*?输出/g, '')
+          .replace(/重要：[\s\S]*?不要/g, '')
+          .replace(/分析[\s\S]*?完成/g, '')
+          .replace(/构思[\s\S]*?写/g, '')
+          .trim();
 
-      if (actualContent.length > 20) {
-        return actualContent;
+        // 再次检查可读比例
+        const actualReadable = (actualContent.match(/[\u4e00-\u9fa5a-zA-Z0-9，。、！？；""''（）【】]/g) || []).length;
+        const actualRatio = actualReadable / (actualContent.length || 1);
+
+        if (actualRatio > 0.5 && actualContent.length > 50) {
+          return actualContent;
+        }
       }
 
       // 如果提取失败，返回 reasoning 本身

@@ -22,110 +22,6 @@ const logApiCall = (level: string, message: string, data?: any) => {
   console.log(`[GENERATE-CONTENT-API] ${JSON.stringify(logEntry)}`);
 };
 
-// 模拟内容生成函数
-function generateMockContent(title: string, userInput?: string): string {
-  const topic = userInput || title;
-  
-  // 分析用户输入，提取关键信息
-  const analysis = analyzeUserInput(topic);
-  
-  const mockContents = [
-    `大家好呀！今天想和大家分享一下${analysis.subject}～\n\n${analysis.opening}\n\n${analysis.body}\n\n${analysis.closing}\n\n${analysis.hashtags}`,
-    `${analysis.opening}\n\n最近和${analysis.subject}相处的时光真的很治愈。${analysis.body}\n\n分享出来希望能给大家带来一点快乐！\n\n${analysis.closing}\n\n${analysis.hashtags}`,
-    `今天来聊聊我的${analysis.subject}～\n\n${analysis.body}\n\n${analysis.closing}\n\n${analysis.hashtags}`
-  ];
-
-  return mockContents[Math.floor(Math.random() * mockContents.length)];
-}
-
-// 分析用户输入，提取关键信息
-function analyzeUserInput(input: string): any {
-  // 提取主体（如小猫咪、宠物、美食等）
-  let subject = '生活日常';
-  let name = '';
-  let food = '';
-  
-  // 检测宠物相关词汇
-  if (input.includes('猫咪') || input.includes('猫')) {
-    subject = '我家的小猫咪';
-    // 提取名字
-    const nameMatch = input.match(/叫([^。，,]+)/);
-    if (nameMatch) {
-      name = nameMatch[1].trim();
-    }
-  } else if (input.includes('狗狗') || input.includes('狗')) {
-    subject = '我家的狗狗';
-    const nameMatch = input.match(/叫([^。，,]+)/);
-    if (nameMatch) {
-      name = nameMatch[1].trim();
-    }
-  } else if (input.includes('宠物')) {
-    subject = '我家的宠物';
-  } else if (input.includes('美食') || input.includes('做法') || input.includes('菜谱') || input.includes('烹饪')) {
-    // 检测美食相关词汇
-    subject = '美食做法';
-    // 提取具体美食
-    const foodMatch = input.match(/分享(?:一个|一道|一种)?(?:美食|菜品)?(?:做法)?，?([^。，,]+)/);
-    if (foodMatch) {
-      food = foodMatch[1].trim();
-    } else if (input.includes('蒸鸡蛋')) {
-      food = '蒸鸡蛋';
-    }
-  }
-  
-  // 生成开场白
-  let opening = '大家好～';
-  if (name) {
-    opening = `大家好！今天要给大家介绍我的小可爱 ${name}～`;
-  } else if (food) {
-    opening = `大家好！今天想和大家分享${food}的做法～`;
-  }
-  
-  // 生成主体内容
-  let body = '';
-  if (subject.includes('猫咪') && name) {
-    body = `说到${name}，它真的是我生活里的快乐源泉！每天回家一开门，它就会跑过来蹭我的腿，超级粘人～\n\n最近它特别喜欢玩逗猫棒，每次玩起来都像个小疯子，可爱到爆炸！\n\n最让我感动的是，每当我工作压力大的时候，它总会安静地趴在我腿上，仿佛在安慰我。`;
-  } else if (subject.includes('猫咪')) {
-    body = `我家猫咪真的超有个性！有时候高冷得像个女王，有时候又粘人得像个小baby～\n\n最近发现它特别喜欢在窗台上晒太阳，缩成一团像个小毛球，简直萌化了！`;
-  } else if (subject.includes('狗狗')) {
-    body = `我家狗狗真的是个小天使！每天准时叫我起床，陪我散步，还会在我难过的时候舔我的手～\n\n最近它学会了新技能，会接飞盘了，超级聪明！`;
-  } else if (subject.includes('美食做法') && food === '蒸鸡蛋') {
-    body = `分享一个超级简单又好吃的${food}做法！\n\n食材：鸡蛋2个、温水适量、盐少许、生抽、香油\n\n步骤：\n1. 鸡蛋打散，加入少许盐调味\n2. 加入1.5倍的温水，搅拌均匀\n3. 用滤网过滤掉气泡\n4. 盖上保鲜膜，用牙签扎几个小孔\n5. 水开后大火蒸8-10分钟\n6. 取出后淋上生抽和香油\n\n这样做出来的蒸鸡蛋嫩滑如布丁，老人小孩都爱吃！`;
-  } else if (subject.includes('美食做法') && food) {
-    body = `今天要分享${food}的做法！\n\n这道菜其实很简单，主要食材就是${food}和一些常见的调料。\n\n做法步骤：\n1. 准备好食材，洗净切块\n2. 起锅烧油，放入葱姜爆香\n3. 加入主料翻炒\n4. 加入适量调料调味\n5. 小火炖煮至熟透\n6. 撒上葱花即可出锅\n\n这样做出来的${food}味道鲜美，营养丰富，大家可以试试！`;
-  } else {
-    body = `最近生活里有很多小确幸，想和大家分享一下～\n\n虽然都是些平凡的小事，但正是这些点点滴滴让生活变得更美好。`;
-  }
-  
-  // 生成结尾
-  let closing = '希望大家喜欢我的分享～';
-  if (name) {
-    closing = `${name}说：谢谢大家的喜欢～`;
-  } else if (food) {
-    closing = `大家一定要试试这个${food}的做法，真的超级好吃！`;
-  }
-  
-  // 生成话题标签
-  let hashtags = '#生活分享 #日常';
-  if (subject.includes('猫咪')) {
-    hashtags = name ? `#猫咪日常 #我家萌宠 #${name}` : '#猫咪日常 #我家萌宠';
-  } else if (subject.includes('狗狗')) {
-    hashtags = name ? `#狗狗日常 #我家萌宠 #${name}` : '#狗狗日常 #我家萌宠';
-  } else if (subject.includes('美食做法')) {
-    hashtags = food ? `#美食分享 #${food} #家常菜谱` : '#美食分享 #家常菜谱';
-  }
-  
-  return {
-    subject,
-    name,
-    food,
-    opening,
-    body,
-    closing,
-    hashtags
-  };
-}
-
 // 验证API密钥 - 仅验证LongCat API Key
 const validateApiKey = (): { valid: boolean; error?: string } => {
   // 仅使用LongCat API Key
@@ -373,7 +269,7 @@ async function generateContentStream(
 
     // 允许短内容，避免因长度检查导致失败
     if (content.trim().length === 0) {
-      console.warn('[GENERATE-CONTENT-API] Empty content after trim, using fallback');
+      console.warn('[GENERATE-CONTENT-API] Empty content after trim');
       throw new Error('Empty content after trim');
     }
 
@@ -384,11 +280,8 @@ async function generateContentStream(
       message: apiError instanceof Error ? apiError.message : 'Unknown generation error'
     });
 
-    // 超时或API错误时，返回模拟响应以确保功能可用
-    console.warn('[GENERATE-CONTENT-API] Using mock response due to generation error');
-    content = generateMockContent(selectedTitle, idea || '内容生成');
-    // 继续执行，不抛出错误
-    console.log('[GENERATE-CONTENT-API] Mock content generated, length:', content.length);
+    // API错误时，直接抛出错误，不使用mock
+    throw apiError;
   }
   
   res.write(`data: ${JSON.stringify({ stage: "content", content })}\n\n`);
