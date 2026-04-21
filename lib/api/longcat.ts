@@ -23,7 +23,7 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
   try {
     console.log('[callLongCatAPI] Calling LongCat API at:', apiUrl);
 
-    const endpoint = apiUrl;
+    const endpoint = apiUrl.endsWith('/') ? apiUrl + 'openai/v1/chat/completions' : apiUrl + '/openai/v1/chat/completions';
     const requestBody = {
       model: model,
       messages: [{ role: 'user', content: prompt }],
