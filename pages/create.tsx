@@ -199,6 +199,24 @@ export default function CreatePage() {
                   }
                 } else if (stageData.stage === 'keywords') {
                   setKeywords(stageData.content?.tags || []);
+                } else if (stageData.stage === 'complete') {
+                  // 当生成完成时，保存到本地存储
+                  const currentUserId = localStorage.getItem("userId");
+                  if (currentUserId && stageData.content) {
+                    const creationData = {
+                      id: stageData.content.id,
+                      userId: currentUserId,
+                      title: stageData.content.title,
+                      content: stageData.content.content,
+                      keywords: stageData.content.keywords,
+                      topic: selectedTopic || { category: '生活方式' },
+                      createdAt: Date.now(),
+                    };
+                    
+                    const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+                    existingCreations.push(creationData);
+                    localStorage.setItem('userCreations', JSON.stringify(existingCreations));
+                  }
                 }
               } catch (e) {
                 console.error('Failed to parse SSE data:', e);
@@ -310,6 +328,24 @@ export default function CreatePage() {
                   }
                 } else if (stageData.stage === 'keywords') {
                   setKeywords(stageData.content?.tags || []);
+                } else if (stageData.stage === 'complete') {
+                  // 当生成完成时，保存到本地存储
+                  const currentUserId = localStorage.getItem("userId");
+                  if (currentUserId && stageData.content) {
+                    const creationData = {
+                      id: stageData.content.id,
+                      userId: currentUserId,
+                      title: stageData.content.title,
+                      content: stageData.content.content,
+                      keywords: stageData.content.keywords,
+                      topic: selectedTopic || { category: '生活方式' },
+                      createdAt: Date.now(),
+                    };
+                    
+                    const existingCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+                    existingCreations.push(creationData);
+                    localStorage.setItem('userCreations', JSON.stringify(existingCreations));
+                  }
                 }
               } catch (e) {
                 console.error('Failed to parse SSE data:', e);
