@@ -74,14 +74,8 @@ export default function HistoryPage() {
     setUserId(storedUserId);
     fetchUserProfile(storedUserId);
 
-    // 从localStorage获取用户的创作历史
-    const userCreations = JSON.parse(localStorage.getItem('userCreations') || '[]') as Creation[];
-    if (userCreations.length > 0) {
-      setCreations(userCreations);
-    } else {
-      // 如果没有本地数据，获取用户的创作历史
-      fetchCreations(storedUserId);
-    }
+    // 首先尝试从后端获取最新数据，确保跨设备同步
+    fetchCreations(storedUserId);
   }, [router, isMounted]);
 
 
@@ -89,25 +83,35 @@ export default function HistoryPage() {
     try {
       setIsLoading(true);
 
-      // 优先从localStorage获取创作历史
-      const localCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
-      if (localCreations.length > 0) {
-        setCreations(localCreations);
-        await generateAiSummary(localCreations);
-        setIsLoading(false);
-        return;
-      }
-
-      // 如果没有本地数据，从ContentGenerationService获取
+      // 首先从ContentGenerationService获取（后端数据）
       const userCreations = await contentService.getUserCreations(userId);
 
       if (userCreations.length > 0) {
-        setCreations(userCreations);
-        await generateAiSummary(userCreations);
+        // 后端有数据，更新到本地存储并显示
+        const formattedCreations = userCreations.map(creation => ({
+          id: creation.id,
+          title: creation.title,
+          content: creation.content,
+          topic: creation.topic,
+          keywords: creation.keywords,
+          createdAt: creation.createdAt || Date.now()
+        }));
+        
+        // 更新本地存储，保持同步
+        localStorage.setItem('userCreations', JSON.stringify(formattedCreations));
+        setCreations(formattedCreations);
+        await generateAiSummary(formattedCreations);
       } else {
-        // 如果都没有数据，不显示创作历史，也不生成总结
-        setCreations([]);
-        setAiSummary('暂无创作记录，开始创作吧！');
+        // 后端没有数据，尝试从本地存储获取
+        const localCreations = JSON.parse(localStorage.getItem('userCreations') || '[]');
+        if (localCreations.length > 0) {
+          setCreations(localCreations);
+          await generateAiSummary(localCreations);
+        } else {
+          // 都没有数据，显示空状态
+          setCreations([]);
+          setAiSummary('暂无创作记录，开始创作吧！');
+        }
       }
     } catch (error) {
       console.error('Error fetching creations:', error);
