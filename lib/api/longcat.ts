@@ -42,26 +42,56 @@ export async function callLongCatAPI(prompt: string, options: any = {}): Promise
     console.log('[callLongCatAPI] SUCCESS: Got response from LongCat API');
 
     const message = response.data.choices?.[0]?.message;
-    
-    // LongCat-Flash-Thinking 模型：content 可能包含最终内容，reasoning_content 是思考过程
-    // content 经常有 UTF-8 编码问题，需要尝试解码
-    let responseText = message?.content || '';
-    
-    // 如果 content 解码后看起来正常（包含实际内容），使用它
-    // 否则使用 reasoning_content
-    if (responseText && responseText.trim().length > 20) {
-      // 检查是否看起来像实际内容（中文、字母等，而不是乱码）
-      const hasReadableContent = /[\u4e00-\u9fa5a-zA-Z0-9]/.test(responseText);
-      if (hasReadableContent) {
-        // content 看起来正常，直接使用
-        return responseText;
-      }
+
+    let content = message?.content || '';
+    const reasoning = message?.reasoning_content || '';
+
+    // 检查 content 是否正常（非乱码）
+    const hasReadableContent = content && /[\u4e00-\u9fa5a-zA-Z]/.test(content);
+
+    if (hasReadableContent && content.trim().length > 20) {
+      // content 正常，直接使用
+      return content;
     }
-    
-    // 如果 content 为空、乱码或太短，使用 reasoning_content
-    responseText = message?.reasoning_content || responseText || '';
-    
-    return responseText;
+
+    // content 不正常，尝试从 reasoning_content 中提取实际内容
+    if (reasoning && reasoning.length > 50) {
+      // reasoning_content 通常包含：思考过程 + 最终内容
+      // 尝试找到实际内容部分（通常在 "现在写" 或 "完整内容" 之后）
+      const markers = ['现在写', '完整内容', '输出：', '内容：', '最终：'];
+      let actualContent = '';
+
+      for (const marker of markers) {
+        const markerIndex = reasoning.lastIndexOf(marker);
+        if (markerIndex !== -1 && markerIndex < reasoning.length - 20) {
+          actualContent = reasoning.substring(markerIndex + marker.length).trim();
+          break;
+        }
+      }
+
+      // 如果没找到标记，尝试取后半部分（通常实际内容在后面）
+      if (!actualContent) {
+        const halfIndex = Math.floor(reasoning.length / 2);
+        actualContent = reasoning.substring(halfIndex).trim();
+      }
+
+      // 清理内容：移除思考过程的部分
+      actualContent = actualContent
+        .replace(/首先[\s\S]*?其次/g, '')
+        .replace(/需要[\s\S]*?输出/g, '')
+        .replace(/重要：[\s\S]*?不要/g, '')
+        .trim();
+
+      if (actualContent.length > 20) {
+        return actualContent;
+      }
+
+      // 如果提取失败，返回 reasoning 本身
+      return reasoning;
+    }
+
+    // 最后的保底方案：返回 content（即使可能是乱码）
+    return content || reasoning || '';
   } catch (error: any) {
     console.error('[callLongCatAPI] FAILED: Error calling LongCat API:', {
       message: error.message,
